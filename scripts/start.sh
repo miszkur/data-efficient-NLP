@@ -2,7 +2,7 @@
 set -e
 
 # Docker image name for this project
-export DOCKER_IMAGE_NAME="filip/default"
+export DOCKER_IMAGE_NAME="agnieszka/default"
 
 # Path to where in the docker container the project root will be mounted
 export DOCKER_WORKSPACE_PATH="/workspace"
