@@ -1,15 +1,14 @@
 import json
 import argparse
-from utils import fix_filename
-from run_experiment import run_experiment
+from data_processing.ev_parser import create_dataset
+from config.config import multilabel_base
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config_file", default="test.json", type="str")
-    args = parser.parse_args()
-    config_file = json.load(open(fix_filename(args.config_file), "r"))
-    print(f"Config: {config_file}")
-    run(config_file)
+    config = multilabel_base()
+    ds_train = create_dataset(batch_size=config.batch_size)
+    print(ds_train)
 
 main()
+
+

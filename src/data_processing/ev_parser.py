@@ -1,25 +1,49 @@
-import tensorflow as tf
+from transformers import BertTokenizer
+from torch.utils.data import Dataset, DataLoader
+import torch
+import numpy as np
 import pandas as pd
 import os
 
-DATA_DIR = 'data'
-AUTOTUNE = tf.data.experimental.AUTOTUNE
-SHUFFLE_BUFFER_SIZE = 1024
-
-def load_dataset(split):
-  df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
-
-  reviews = df.review.to_list()
-
-  labels = []
-  for x in df.itertuples():
-    labels.append(list(x[3:]))
-
-  label_names = df.columns[2:]
-  return reviews, labels, label_names
+DATA_DIR = '../data'
 
 
-def create_dataset(batch_size, is_training=True, split='train'):
+
+class EvDataset(Dataset):
+  def __init__(self, df, tokenizer):
+    self.tokenizer = tokenizer
+
+    self.targets = []
+    for x in df.itertuples():
+      self.targets.append(list(x[3:]))
+
+    self.target_names = df.columns[2:]
+    self.reviews = df.review
+
+  def __len__(self):
+    return len(self.targets)
+
+  def __getitem__(self, item):
+    review = str(self.reviews[item])
+    target = self.targets[item]
+    encoding = self.tokenizer.encode_plus(
+      review,
+      add_special_tokens=True,
+      return_token_type_ids=False,
+      padding='max_length',
+      return_attention_mask=True,
+      return_tensors='pt',
+    )
+
+    return {
+      'review_text': review,
+      'input_ids': encoding['input_ids'].flatten(),
+      'attention_mask': encoding['attention_mask'].flatten(),
+      'targets': torch.tensor(target, dtype=torch.long)
+    }
+
+
+def create_dataloader(batch_size, split='train'):
   """Load and parse dataset.
   Args:
       filenames: list of image paths
@@ -28,19 +52,14 @@ def create_dataset(batch_size, is_training=True, split='train'):
   """
   
   assert split in ['train', 'test', 'valid']
+  is_training = (split == 'train')
 
-  reviews, labels, label_names = load_dataset(split)
-
-  dataset = tf.data.Dataset.from_tensor_slices((reviews, labels))
-  if is_training == True:
-      # This is a small dataset, only load it once, and keep it in memory.
-      dataset = dataset.cache()
-      # Shuffle the data each buffer size
-      dataset = dataset.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE)
-      
-  # Batch the data for multiple steps
-  dataset = dataset.batch(batch_size)
-  # Fetch batches in the background while the model is training.
-  dataset = dataset.prefetch(buffer_size=AUTOTUNE)
+  df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
   
-  return dataset, label_names
+  tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+
+  return DataLoader(
+    EvDataset(df, tokenizer), 
+    batch_size=batch_size,
+    shuffle=is_training)
+
