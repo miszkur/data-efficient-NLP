@@ -20,8 +20,9 @@ def bert_config():
 def multilabel_base():
   config = ml_collections.ConfigDict()
   config.epochs = 2  # 20
-  config.lr = 5e-5 # 1e-4
+  config.lr = 1e-4
   config.weight_decay = 0.01
   config.batch_size = 8
-  config.bert = bert_config()
+  config.warmup_steps = 500
+  config.bert = bert_tiny()
   return config

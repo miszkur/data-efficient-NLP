@@ -7,8 +7,12 @@ from data_processing.ev_parser import create_dataloader
 from config.config import multilabel_base
 from tqdm.auto import tqdm
 
+from transformers import get_cosine_schedule_with_warmup
+
 
 def train(config, model: nn.Module):
+  device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
   config = multilabel_base()
   num_epochs = config.epochs
   
@@ -16,12 +20,19 @@ def train(config, model: nn.Module):
 
   trainloader = create_dataloader(config)
   validation_loader = create_dataloader(config, 'valid')
+
+  num_training_steps = num_epochs * len(trainloader)
+  
   model.train()
   optimizer = optim.AdamW(
     model.parameters(),
     lr=config.lr,
     weight_decay=config.weight_decay)
   criterion = nn.BCEWithLogitsLoss()
+  lr_scheduler = get_cosine_schedule_with_warmup(
+    optimizer,
+    num_warmup_steps=config.warmup_steps, 
+    num_training_steps=num_training_steps)
 
   for epoch_num in range(num_epochs):
     model.train()
@@ -29,16 +40,16 @@ def train(config, model: nn.Module):
     data_iterator = tqdm(trainloader, total=int(len(trainloader))) # ncols=70)
     running_loss = 0.0
     for batch_iter, batch in enumerate(data_iterator):
-      # batch = {k: v.to(device) for k, v in batch.items()}
-      # outputs = model(**batch)
       optimizer.zero_grad()
-      # inputs = inputs.to(device, dtype=torch.float)
-      # labels = labels.to(device, dtype=torch.float)
-      output = model(input_id=batch['input_ids'], mask=batch['attention_mask'])
+      inputs = batch['input_ids'].to(device, dtype=torch.long)
+      attention_masks = batch['attention_mask'].to(device, dtype=torch.float)
+      labels = batch['label'].to(device, dtype=torch.float)
+      output = model(input_id=inputs, mask=attention_masks)
 
-      loss = criterion(output, batch['label'])
+      loss = criterion(output, labels)
       loss.backward()
       optimizer.step()
+      lr_scheduler.step()
 
       # print statistics
       running_loss += loss.item()
@@ -52,9 +63,11 @@ def train(config, model: nn.Module):
     val_loss = 0
     with torch.no_grad():
       for batch in validation_loader:
-        output = model(input_id=batch['input_ids'], mask=batch['attention_mask'])
-        val_loss += criterion(output, batch['label'])
-    # total loss - divide by number of batches
+        inputs = batch['input_ids'].to(device, dtype=torch.long)
+        attention_masks = batch['attention_mask'].to(device, dtype=torch.float)
+        labels = batch['label'].to(device, dtype=torch.float)
+        output = model(input_id=inputs, mask=attention_masks)
+        val_loss += criterion(output, labels)
     val_loss = val_loss / len(validation_loader)
     print('Validation Loss: {:.4f}'.format(val_loss))
   

@@ -31,7 +31,7 @@ class EvDataset(Dataset):
       add_special_tokens=True, # Add [CLS] [SEP] tokens
       return_token_type_ids=False,
       padding='max_length',
-      max_length=200, # TODO: check
+      max_length=512, 
       truncation=True,
       return_attention_mask=True,
       return_tensors='pt',
