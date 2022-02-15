@@ -39,7 +39,7 @@ class EvDataset(Dataset):
       'review_text': review,
       'input_ids': encoding['input_ids'].flatten(),
       'attention_mask': encoding['attention_mask'].flatten(),
-      'targets': torch.tensor(target, dtype=torch.long)
+      'label': torch.tensor(target, dtype=torch.float)
     }
 
 def create_dataset(split='train'):
