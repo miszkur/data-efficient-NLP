@@ -26,9 +26,9 @@ class EvDataset(Dataset):
   def __getitem__(self, item):
     review = str(self.reviews[item])
     target = self.targets[item]
-    encoding = self.tokenizer.encode_plus(
+    encoding = self.tokenizer.encode(
       review,
-      add_special_tokens=True,
+      add_special_tokens=True, # Add [CLS] [SEP] tokens
       return_token_type_ids=False,
       padding='max_length',
       return_attention_mask=True,
@@ -42,6 +42,13 @@ class EvDataset(Dataset):
       'targets': torch.tensor(target, dtype=torch.long)
     }
 
+def create_dataset(split='train'):
+  """Load and parse dataset."""
+  assert split in ['train', 'test', 'valid']
+
+  df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
+  tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+  return EvDataset(df, tokenizer)
 
 def create_dataloader(batch_size, split='train'):
   """Load and parse dataset.
