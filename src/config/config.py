@@ -24,5 +24,5 @@ def multilabel_base():
   config.weight_decay = 0.01
   config.batch_size = 8
   config.warmup_steps = 500
-  config.bert = bert_tiny()
+  config.bert = bert_config()
   return config
