@@ -23,5 +23,5 @@ def multilabel_base():
   config.lr = 5e-5 # 1e-4
   config.weight_decay = 0.01
   config.batch_size = 8
-  config.bert = bert_tiny()
+  config.bert = bert_config()
   return config
