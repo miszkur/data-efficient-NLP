@@ -26,7 +26,7 @@ class EvDataset(Dataset):
   def __getitem__(self, item):
     review = str(self.reviews[item])
     target = self.targets[item]
-    encoding = self.tokenizer.encode(
+    encoding = self.tokenizer.encode_plus(
       review,
       add_special_tokens=True, # Add [CLS] [SEP] tokens
       return_token_type_ids=False,
@@ -39,7 +39,7 @@ class EvDataset(Dataset):
     attn_mask = encoding['attention_mask'].flatten()
 
     return {
-      # 'review_text': review,
+      'review_text': review,
       'input_ids': input_ids,
       'attention_mask': attn_mask,
       'label': torch.tensor(target, dtype=torch.float)
