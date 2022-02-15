@@ -35,10 +35,13 @@ class EvDataset(Dataset):
       return_tensors='pt',
     )
 
+    input_ids = encoding['input_ids'].flatten()
+    attn_mask = encoding['attention_mask'].flatten()
+
     return {
-      'review_text': review,
-      'input_ids': encoding['input_ids'].flatten(),
-      'attention_mask': encoding['attention_mask'].flatten(),
+      # 'review_text': review,
+      'input_ids': input_ids,
+      'attention_mask': attn_mask,
       'label': torch.tensor(target, dtype=torch.float)
     }
 
