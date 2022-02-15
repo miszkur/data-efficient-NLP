@@ -31,6 +31,8 @@ class EvDataset(Dataset):
       add_special_tokens=True, # Add [CLS] [SEP] tokens
       return_token_type_ids=False,
       padding='max_length',
+      max_length=200, # TODO: check
+      truncation=True,
       return_attention_mask=True,
       return_tensors='pt',
     )
@@ -53,7 +55,7 @@ def create_dataset(split='train'):
   tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
   return EvDataset(df, tokenizer)
 
-def create_dataloader(batch_size, split='train'):
+def create_dataloader(config, split='train'):
   """Load and parse dataset.
   Args:
       filenames: list of image paths
@@ -66,10 +68,10 @@ def create_dataloader(batch_size, split='train'):
 
   df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
   
-  tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+  tokenizer = BertTokenizer.from_pretrained(config.bert.bert_version)
 
   return DataLoader(
     EvDataset(df, tokenizer), 
-    batch_size=batch_size,
+    batch_size=config.batch_size,
     shuffle=is_training)
 
