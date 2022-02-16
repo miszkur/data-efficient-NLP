@@ -25,7 +25,6 @@ def compute_accuracy(output, labels):
 
 def train(config, model: nn.Module, results_dir):
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-  save_mode_path = os.path.join(results_dir, 'bert' + '.pth')
 
   train_loader = create_dataloader(config)
   validation_loader = create_dataloader(config, 'valid')
@@ -98,5 +97,6 @@ def train(config, model: nn.Module, results_dir):
     history['val_accuracy'].append(val_accuracy)
     history['accuracy'].append(train_accuracy)
   
-  torch.save(model.state_dict(), save_mode_path)
+  save_model_path = os.path.join(results_dir, 'bert' + '.pth')
+  torch.save(model.state_dict(), save_model_path)
   plot_history(history_dict=history, results_dir=results_dir)

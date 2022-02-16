@@ -57,7 +57,7 @@ def create_dataset(split='train'):
   tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
   return EvDataset(df, tokenizer)
 
-def create_dataloader(config, split='train'):
+def create_dataloader(config, split='train', return_target_names=False):
   """Load and parse dataset.
   Args:
       filenames: list of image paths
@@ -71,9 +71,14 @@ def create_dataloader(config, split='train'):
   df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
   
   tokenizer = BertTokenizer.from_pretrained(config.bert.bert_version)
-
-  return DataLoader(
-    EvDataset(df, tokenizer), 
+  ds = EvDataset(df, tokenizer)
+  dl = DataLoader(
+    ds, 
     batch_size=config.batch_size,
     shuffle=is_training)
+
+  if return_target_names:
+    return dl, ds.target_names
+
+  return dl
 
