@@ -82,7 +82,8 @@ def train(config, model: nn.Module, results_dir):
         attention_masks = batch['attention_mask'].to(device, dtype=torch.float)
         labels = batch['label'].to(device, dtype=torch.float)
         output = model(input_id=inputs, mask=attention_masks)
-        val_loss += criterion(output, labels)
+        loss = criterion(output, labels)
+        val_loss += loss.item()
         val_accuracy += compute_accuracy(output, labels)
 
     val_loss /= len(validation_loader)

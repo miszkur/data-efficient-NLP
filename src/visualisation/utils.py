@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 
 def plot_history(history_dict, results_dir):
-    acc = history_dict[' accuracy']
+    acc = history_dict['accuracy']
     val_acc = history_dict['val_accuracy']
     loss = history_dict['loss']
     val_loss = history_dict['val_loss']
