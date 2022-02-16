@@ -41,10 +41,10 @@ def train(config, model: nn.Module, results_dir):
     lr=config.lr,
     weight_decay=config.weight_decay)
   criterion = nn.BCEWithLogitsLoss()
-  lr_scheduler = get_cosine_schedule_with_warmup(
-    optimizer,
-    num_warmup_steps=config.warmup_steps, 
-    num_training_steps=num_training_steps)
+  # lr_scheduler = get_cosine_schedule_with_warmup(
+  #   optimizer,
+  #   num_warmup_steps=config.warmup_steps, 
+  #   num_training_steps=num_training_steps)
 
   for epoch_num in range(num_epochs):
     model.train()
@@ -55,14 +55,15 @@ def train(config, model: nn.Module, results_dir):
     for batch_iter, batch in enumerate(data_iterator):
       optimizer.zero_grad()
       inputs = batch['input_ids'].to(device, dtype=torch.long)
-      attention_masks = batch['attention_mask'].to(device, dtype=torch.float)
+      attention_masks = batch['attention_mask'].to(device, dtype=torch.long)
+      token_type_ids = batch['token_type_ids'].to(device, dtype=torch.long)
       labels = batch['label'].to(device, dtype=torch.float)
-      output = model(input_id=inputs, mask=attention_masks)
+      output = model(input_ids=inputs, attn_mask=attention_masks, token_type_ids=token_type_ids)
 
       loss = criterion(output, labels)
       loss.backward()
       optimizer.step()
-      lr_scheduler.step()
+      # lr_scheduler.step()
 
       # Calculate statistics
       current_accuracy = compute_accuracy(output, labels)
@@ -79,9 +80,10 @@ def train(config, model: nn.Module, results_dir):
     with torch.no_grad():
       for batch in validation_loader:
         inputs = batch['input_ids'].to(device, dtype=torch.long)
-        attention_masks = batch['attention_mask'].to(device, dtype=torch.float)
+        attention_masks = batch['attention_mask'].to(device, dtype=torch.long)
+        token_type_ids = batch['token_type_ids'].to(device, dtype=torch.long)
         labels = batch['label'].to(device, dtype=torch.float)
-        output = model(input_id=inputs, mask=attention_masks)
+        output = model(input_ids=inputs, attn_mask=attention_masks, token_type_ids=token_type_ids)
         loss = criterion(output, labels)
         val_loss += loss.item()
         val_accuracy += compute_accuracy(output, labels)

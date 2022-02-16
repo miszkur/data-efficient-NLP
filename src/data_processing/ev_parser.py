@@ -29,7 +29,7 @@ class EvDataset(Dataset):
     encoding = self.tokenizer.encode_plus(
       review,
       add_special_tokens=True, # Add [CLS] [SEP] tokens
-      return_token_type_ids=False,
+      return_token_type_ids=True,
       padding='max_length',
       max_length=512, 
       truncation=True,
@@ -39,12 +39,14 @@ class EvDataset(Dataset):
 
     input_ids = encoding['input_ids'].flatten()
     attn_mask = encoding['attention_mask'].flatten()
+    token_type_ids = encoding["token_type_ids"].flatten()
 
     return {
       'review_text': review,
       'input_ids': input_ids,
       'attention_mask': attn_mask,
-      'label': torch.tensor(target, dtype=torch.int)
+      'token_type_ids': token_type_ids,
+      'label': torch.tensor(target, dtype=torch.float)
     }
 
 def create_dataset(split='train'):
