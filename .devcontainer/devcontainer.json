@@ -1,5 +1,5 @@
 {
-	"name": "tobias/default",
+	"name": "agnieszka/default",
 	"build": {
 		"context": "..",
 		"dockerfile": "../Dockerfile",

@@ -12,6 +12,7 @@ from transformers import get_cosine_schedule_with_warmup
 
 def train(config, model: nn.Module):
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+  print(device)
 
   config = multilabel_base()
   num_epochs = config.epochs
