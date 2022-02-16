@@ -17,6 +17,5 @@ class BertClassifier(nn.Module):
     _, pooled_output = self.bert(input_ids=input_id, attention_mask=mask, return_dict=False)
     dropout_output = self.dropout(pooled_output)
     linear_output = self.linear(dropout_output)
-    final_layer = self.relu(linear_output)
 
-    return final_layer
+    return linear_output

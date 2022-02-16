@@ -1,6 +1,6 @@
 python-dotenv
 transformers
-torch
 pandas
 ml-collections
-
+torchmetrics
+matplotlib
