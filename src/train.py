@@ -5,98 +5,133 @@ import torch
 import os
 
 from data_processing.ev_parser import create_dataloader
-from config.config import multilabel_base
 from tqdm.auto import tqdm
 from torchmetrics import HammingDistance
 from visualisation.utils import plot_history 
 
 from transformers import get_cosine_schedule_with_warmup
 
-hamming_distance = HammingDistance()
+class Learner:
+  def __init__(self, device, model, results_dir):
+    self.hamming_distance = HammingDistance()
+    self.device = device
+    self.history = {
+      'loss': [], 'val_loss': [], 'accuracy': [], 'val_accuracy': []
+      }
+    self.bce_loss = nn.BCEWithLogitsLoss()
+    self.model = model
+    self.save_model_path = os.path.join(results_dir, 'bert' + '.pth')
+    self.results_dir = results_dir
 
-def compute_accuracy(output, labels):
-  """Compute accuracy accprding to the following formula:
-  accuracy = 1 - hamming distance"""
-  with torch.no_grad():
-    preds = torch.sigmoid(output).cpu()
-    target = labels.cpu().to(torch.int)
-    acc = hamming_distance(preds, target)
-    return 1 - acc.item()
+  def train(self, config, train_loader=None):
+    num_epochs = config.num_epochs
+    best_model = None
+    self.epochs_val_loss_increase = 0
+    self.max_grad_norm = config.max_grad_norm
+    self.optimizer = optim.AdamW(
+      self.model.parameters(),
+      lr=config.lr,
+      weight_decay=config.weight_decay)
 
-def train(config, model: nn.Module, results_dir):
-  device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if train_loader is None:
+      train_loader = create_dataloader(config)
+    validation_loader = create_dataloader(config, 'valid')
 
-  train_loader = create_dataloader(config)
-  validation_loader = create_dataloader(config, 'valid')
+    num_training_steps = num_epochs * len(train_loader)
+    val_loss_prev = 1
+    for epoch_num in range(num_epochs):
+      print('Epoch {}/{}'.format(epoch_num, num_epochs - 1))
+      data_iterator = tqdm(train_loader, total=int(len(train_loader))) # ncols=70)
+      running_loss = 0.0
+      accuracy = 0.0
+      for batch in data_iterator:
+        loss, current_accuracy = self.training_step(batch)
 
-  num_epochs = config.epochs
-  num_training_steps = num_epochs * len(train_loader)
+        accuracy += current_accuracy
+        running_loss += loss
+        data_iterator.set_postfix(loss=(loss), accuracy=(current_accuracy))
+      
+      train_loss = running_loss / len(train_loader)
+      train_accuracy = accuracy / len(train_loader)
+      
+      val_loss, val_accuracy = self.evaluate(validation_loader)
 
-  history = {'loss': [], 'val_loss': [], 'accuracy': [], 'val_accuracy': []}
-  
-  model.train()
-  optimizer = optim.AdamW(
-    model.parameters(),
-    lr=config.lr,
-    weight_decay=config.weight_decay)
-  criterion = nn.BCEWithLogitsLoss()
-  # lr_scheduler = get_cosine_schedule_with_warmup(
-  #   optimizer,
-  #   num_warmup_steps=config.warmup_steps, 
-  #   num_training_steps=num_training_steps)
+      print(f'Training loss: {train_loss:.4f}, Training accuracy: {train_accuracy:.4f}')
+      print(f'Validation Loss: {val_loss:.4f},  Validation accuracy: {val_accuracy:.4f}')
 
-  for epoch_num in range(num_epochs):
-    model.train()
-    print('Epoch {}/{}'.format(epoch_num, num_epochs - 1))
-    data_iterator = tqdm(train_loader, total=int(len(train_loader))) # ncols=70)
-    running_loss = 0.0
-    accuracy = 0.0
-    for batch_iter, batch in enumerate(data_iterator):
-      optimizer.zero_grad()
-      inputs = batch['input_ids'].to(device, dtype=torch.long)
-      attention_masks = batch['attention_mask'].to(device, dtype=torch.long)
-      token_type_ids = batch['token_type_ids'].to(device, dtype=torch.long)
-      labels = batch['label'].to(device, dtype=torch.float)
-      output = model(input_ids=inputs, attn_mask=attention_masks, token_type_ids=token_type_ids)
+      self.update_history_dict(train_loss, val_loss, train_accuracy, val_accuracy)
 
-      loss = criterion(output, labels)
-      loss.backward()
-      optimizer.step()
-      # lr_scheduler.step()
+      if val_loss_prev < val_loss:
+        self.epochs_val_loss_increase += 1
+      else:
+        best_model = self.model.state_dict()
+        self.epochs_val_loss_increase = 0
+      val_loss_prev = val_loss
 
-      # Calculate statistics
-      current_accuracy = compute_accuracy(output, labels)
-      accuracy += current_accuracy
-      running_loss += loss.item()
-      data_iterator.set_postfix(loss=(loss.item()), accuracy=(current_accuracy))
+      if should_stop_early:
+        break
+
+    torch.save(best_model, self.save_model_path)
+    plot_history(history_dict=self.history, results_dir=self.results_dir)
+
+  def inference(self, batch):
+    inputs = batch['input_ids'].to(self.device, dtype=torch.long)
+    attention_masks = batch['attention_mask'].to(self.device, dtype=torch.long)
+    token_type_ids = batch['token_type_ids'].to(self.device, dtype=torch.long)
     
-    train_loss = running_loss / len(train_loader)
-    train_accuracy = accuracy / len(train_loader)
+    return self.model(
+      input_ids=inputs, 
+      attn_mask=attention_masks, 
+      token_type_ids=token_type_ids)
+
+  def training_step(self, batch):
+    self.model.train()
+    self.optimizer.zero_grad()
+    outputs = self.inference(batch)
+    labels = batch['label'].to(self.device, dtype=torch.float)
+
+    loss = self.bce_loss(outputs, labels)
+    loss.backward()
+    torch.nn.utils.clip_grad_norm_(
+      self.model.parameters(), self.max_grad_norm)
+    self.optimizer.step()
     
-    model.eval() 
-    val_loss = 0
-    val_accuracy = 0
+    accuracy = self.compute_accuracy(outputs, labels)
+    return loss.item(), accuracy
+
+  def evaluate(self, data_loader):
+    self.model.eval() 
+    acc_loss = 0
+    acc_accuracy = 0
     with torch.no_grad():
-      for batch in validation_loader:
-        inputs = batch['input_ids'].to(device, dtype=torch.long)
-        attention_masks = batch['attention_mask'].to(device, dtype=torch.long)
-        token_type_ids = batch['token_type_ids'].to(device, dtype=torch.long)
-        labels = batch['label'].to(device, dtype=torch.float)
-        output = model(input_ids=inputs, attn_mask=attention_masks, token_type_ids=token_type_ids)
-        loss = criterion(output, labels)
-        val_loss += loss.item()
-        val_accuracy += compute_accuracy(output, labels)
+      for batch in data_loader:
+        outputs = self.inference(batch)
+        labels = batch['label'].to(self.device, dtype=torch.float)
+        
+        loss = self.bce_loss(outputs, labels)
+        acc_loss += loss.item()
+        acc_accuracy += self.compute_accuracy(outputs, labels)
 
-    val_loss /= len(validation_loader)
-    val_accuracy /= len(validation_loader)
-    print(f'Training loss: {train_loss:.4f}, Training accuracy: {train_accuracy:.4f}')
-    print(f'Validation Loss: {val_loss:.4f},  Validation accuracy: {val_accuracy:.4f}')
+    acc_loss /= len(data_loader)
+    acc_accuracy /= len(data_loader)
+    return acc_loss, acc_accuracy
 
-    history['loss'].append(train_loss)
-    history['val_loss'].append(val_loss)
-    history['val_accuracy'].append(val_accuracy)
-    history['accuracy'].append(train_accuracy)
-  
-  save_model_path = os.path.join(results_dir, 'bert' + '.pth')
-  torch.save(model.state_dict(), save_model_path)
-  plot_history(history_dict=history, results_dir=results_dir)
+  def compute_accuracy(self, output, labels):
+    """Compute accuracy accprding to the following formula:
+    accuracy = 1 - hamming distance"""
+    with torch.no_grad():
+      preds = torch.sigmoid(output).cpu()
+      target = labels.cpu().to(torch.int)
+      acc = self.hamming_distance(preds, target)
+      return 1 - acc.item()
+
+  def update_history_dict(self, loss, val_loss, accuracy, val_accuracy):
+    self.history['loss'].append(loss)
+    self.history['accuracy'].append(accuracy)
+    self.history['val_loss'].append(val_loss)
+    self.history['val_accuracy'].append(val_accuracy)
+
+  def should_stop_early(self):
+    return self.history['accuracy'] > 0.98 or self.epochs_val_loss_increase > 4
+
+
