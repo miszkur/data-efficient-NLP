@@ -1,11 +1,18 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
+import ml_collections
 import pickle
 import os
 
 sns.set_style('darkgrid')
 
-def plot_al_results(config):
+def plot_al_results(config: ml_collections.ConfigDict):
+  """Plot accuracy and F1 score of AL experiment
+
+  Args:
+      config (ml_collections.ConfigDict): configuration dictionary. 
+      It should contain path to experiment results and query strategy used in AL.
+  """
   results_path = os.path.join(config.results_dir, f'{config.query_strategy}.pkl')
   
   with open(results_path, 'rb') as f:

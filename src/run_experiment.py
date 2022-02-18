@@ -1,8 +1,10 @@
+import ml_collections
 import torch
 import os
 
 from torch.utils.data import DataLoader, random_split, ConcatDataset
 from abc import abstractmethod
+from typing import Dict, List
 
 from data_processing.ev_parser import create_dataset, create_dataloader
 from visualisation.active_learning import plot_al_results
@@ -34,15 +36,19 @@ class RandomStrategy(QueryStrategy):
     return data_to_label
 
 
-def run_active_learning_experiment(config, device):
-  """
-  Run Active Learning experiment. For now only random strategy is used.
+def run_active_learning_experiment(config: ml_collections, device: str) -> Dict[str, List[float]]:
+  """Run Active Learning experiment. 
+  
+  Save results to the folder specified in the config.
+  For now only random strategy is used.
 
   Args:
-      config: The configuration dictionary.
+      config (ml_collections): configuration dictionary.
+      device (str): cpu or cuda. 
 
   Returns:
-      The experiment result.
+      Dict[str, List[float]]: results dictionary with keys: 
+      accuracy, f1_score and split (size of the training data) 
   """
   assert os.path.isdir(config.results_dir), 'Invalid path to save experiment results!'
 

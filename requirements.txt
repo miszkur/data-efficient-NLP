@@ -6,3 +6,4 @@ torchmetrics
 matplotlib
 scikit-learn
 seaborn
+typing
