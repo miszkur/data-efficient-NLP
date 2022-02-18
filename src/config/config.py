@@ -1,4 +1,5 @@
 import ml_collections
+import os
 
 
 def bert_tiny():
@@ -19,10 +20,22 @@ def bert_config():
 
 def multilabel_base():
   config = ml_collections.ConfigDict()
-  config.epochs = 10  # 20
-  config.lr = 5e-5 #1e-4
+  config.num_epochs = 10  # 20
+  config.lr = 5e-5
   config.weight_decay = 0.01
   config.batch_size = 8
   config.warmup_steps = 500
+  config.max_grad_norm = 1.0
   config.bert = bert_config()
+  config.results_dir = os.path.join('..', 'results')
   return config
+
+def active_learning_config():
+  config = multilabel_base()
+  config.seeds = [2, 42, 52, 62, 72]
+  config.num_al_iters = 17
+  config.sample_size = 48
+  config.results_dir = os.path.join('..', 'results', 'al')
+  config.query_strategy = 'random'
+  return config
+
