@@ -18,7 +18,7 @@ class BertClassifier(nn.Module):
       attention_mask=attn_mask, 
       token_type_ids=token_type_ids)
     
-    # pooled_output - CLS token
+    # pooler_output - CLS token
     dropout_output = self.dropout(output.pooler_output)
     linear_output = self.linear(dropout_output)
 
