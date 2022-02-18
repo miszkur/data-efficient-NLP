@@ -5,3 +5,4 @@ ml-collections
 torchmetrics
 matplotlib
 scikit-learn
+seaborn
