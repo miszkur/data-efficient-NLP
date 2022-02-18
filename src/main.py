@@ -13,22 +13,15 @@ from abc import abstractmethod
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pickle
+from visualisation.active_learning import plot_al_results
 
 def main():
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
   results_dir = os.path.join('..', 'results')
-  # config = multilabel_base()
+  config = multilabel_base()
 
   config = configs.active_learning_config()
   results = run_active_learning_experiment(config, device)
-
-  sns.set_style('darkgrid')
-  sns.lineplot(data=results, x="split", y="accuracy")
-  plt.savefig(os.path.join(results_dir, 'accuracy.png'))
-
-  al_results_path = os.path.join(results_dir, 'al', 'random.pkl')
-  with open(al_results_path, 'wb') as fp:
-    pickle.dump(results, fp)
 
   # model = BertClassifier(config=config.bert) 
   # model.to(device)
