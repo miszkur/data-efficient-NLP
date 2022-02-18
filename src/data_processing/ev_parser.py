@@ -1,12 +1,13 @@
 from transformers import BertTokenizer
 from torch.utils.data import Dataset, DataLoader
+from ml_collections import ConfigDict
+
 import torch
 import numpy as np
 import pandas as pd
 import os
 
 DATA_DIR = '../data'
-
 
 
 class EvDataset(Dataset):
@@ -49,20 +50,35 @@ class EvDataset(Dataset):
       'label': torch.tensor(target, dtype=torch.float)
     }
 
-def create_dataset(split='train'):
-  """Load and parse dataset."""
+def create_dataset(split='train') -> Dataset:
+  """Load and parse dataset.
+
+  Args:
+      split (str, optional): Which data split to load, one of: ['train', 'test', 'valid'].
+      Defaults to 'train'.
+
+  Returns:
+      Dataset: EV dataset.
+  """
   assert split in ['train', 'test', 'valid']
 
   df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
   tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
   return EvDataset(df, tokenizer)
 
-def create_dataloader(config, split='train', return_target_names=False):
-  """Load and parse dataset.
+def create_dataloader(config: ConfigDict, split='train', return_target_names=False) -> DataLoader:
+  """Load dataset and wrap it in DataLoader.
+
   Args:
-      filenames: list of image paths
-      labels: numpy array of shape (BATCH_SIZE, N_LABELS)
-      is_training: boolean to indicate training mode
+      config (ConfigDict): configuration dictionary.
+      split (str, optional): Which data split to load, one of: ['train', 'test', 'valid'].
+      Defaults to 'train'.
+      return_target_names (bool, optional): If true, also target names 
+      (names of topics) will be returned. Defaults to False.
+
+  Returns:
+      DataLoader: EV dataset's dataloader.
+      Optionally returns also target names.
   """
   
   assert split in ['train', 'test', 'valid']

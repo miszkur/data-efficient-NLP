@@ -14,6 +14,7 @@ from train import Learner
 
 
 class QueryStrategy:
+  """Base class for Active Learning query strategies."""
   def __init__(self, dataset, sample_size, seed):
     self.sample_size = sample_size
     self.generator = torch.Generator().manual_seed(seed)
@@ -24,6 +25,7 @@ class QueryStrategy:
     pass
 
 class RandomStrategy(QueryStrategy):
+  """Chooses samples to label uniformly at random."""
   def __init__(self, dataset, sample_size=48, seed=42):
     super().__init__(dataset, sample_size, seed)
 
@@ -36,7 +38,8 @@ class RandomStrategy(QueryStrategy):
     return data_to_label
 
 
-def run_active_learning_experiment(config: ml_collections, device: str) -> Dict[str, List[float]]:
+def run_active_learning_experiment(
+  config: ml_collections.ConfigDict, device: str) -> Dict[str, List[float]]:
   """Run Active Learning experiment. 
   
   Save results to the folder specified in the config.
