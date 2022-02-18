@@ -1,13 +1,15 @@
-from data_processing.ev_parser import create_dataset, create_dataloader
-from config.config import multilabel_base
-from models.bert import BertClassifier
-from torch.utils.data import DataLoader
-from torch.utils.data import random_split, ConcatDataset
-from abc import abstractmethod
-from train import Learner
-
 import torch
 import os
+
+from torch.utils.data import DataLoader, random_split, ConcatDataset
+from abc import abstractmethod
+
+from data_processing.ev_parser import create_dataset, create_dataloader
+from visualisation.active_learning import plot_al_results
+from config.config import multilabel_base
+from models.bert import BertClassifier
+from train import Learner
+
 
 class QueryStrategy:
   def __init__(self, dataset, sample_size, seed):
@@ -77,4 +79,5 @@ def run_active_learning_experiment(config, device):
   results_path = os.path.join(config.results_dir, f'{config.query_strategy}.pkl')
   with open(al_results_path, 'wb') as fp:
     pickle.dump(results, fp)
+  plot_al_results(config)
   return results
