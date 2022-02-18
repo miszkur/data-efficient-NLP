@@ -6,27 +6,29 @@ import os
 
 from data_processing.ev_parser import create_dataloader
 from tqdm.auto import tqdm
-from torchmetrics import HammingDistance
+from torchmetrics import HammingDistance, F1Score
 from visualisation.utils import plot_history 
 
 from transformers import get_cosine_schedule_with_warmup
 
 class Learner:
-  def __init__(self, device, model, results_dir):
+  def __init__(self, device, model, results_dir=None, num_classes=8):
     self.hamming_distance = HammingDistance()
+    self.f1 = F1Score(num_classes=num_classes)
     self.device = device
     self.history = {
       'loss': [], 'val_loss': [], 'accuracy': [], 'val_accuracy': []
       }
     self.bce_loss = nn.BCEWithLogitsLoss()
     self.model = model
-    self.save_model_path = os.path.join(results_dir, 'bert' + '.pth')
+    if results_dir is not None:
+      self.save_model_path = os.path.join(results_dir, 'bert' + '.pth')
     self.results_dir = results_dir
 
   def train(self, config, train_loader=None):
     num_epochs = config.num_epochs
     best_model = None
-    self.epochs_val_loss_increase = 0
+    epochs_val_loss_increase = 0
     self.max_grad_norm = config.max_grad_norm
     self.optimizer = optim.AdamW(
       self.model.parameters(),
@@ -54,7 +56,7 @@ class Learner:
       train_loss = running_loss / len(train_loader)
       train_accuracy = accuracy / len(train_loader)
       
-      val_loss, val_accuracy = self.evaluate(validation_loader)
+      val_loss, val_accuracy, _ = self.evaluate(validation_loader)
 
       print(f'Training loss: {train_loss:.4f}, Training accuracy: {train_accuracy:.4f}')
       print(f'Validation Loss: {val_loss:.4f},  Validation accuracy: {val_accuracy:.4f}')
@@ -62,17 +64,18 @@ class Learner:
       self.update_history_dict(train_loss, val_loss, train_accuracy, val_accuracy)
 
       if val_loss_prev < val_loss:
-        self.epochs_val_loss_increase += 1
+        epochs_val_loss_increase += 1
       else:
         best_model = self.model.state_dict()
-        self.epochs_val_loss_increase = 0
+        epochs_val_loss_increase = 0
       val_loss_prev = val_loss
 
-      if should_stop_early:
+      if self.should_stop_early(epochs_val_loss_increase):
         break
 
-    torch.save(best_model, self.save_model_path)
-    plot_history(history_dict=self.history, results_dir=self.results_dir)
+    if self.results_dir is not None:
+      torch.save(best_model, self.save_model_path)
+      plot_history(history_dict=self.history, results_dir=self.results_dir)
 
   def inference(self, batch):
     inputs = batch['input_ids'].to(self.device, dtype=torch.long)
@@ -96,13 +99,14 @@ class Learner:
       self.model.parameters(), self.max_grad_norm)
     self.optimizer.step()
     
-    accuracy = self.compute_accuracy(outputs, labels)
+    accuracy, _ = self.compute_metrics(outputs, labels)
     return loss.item(), accuracy
 
   def evaluate(self, data_loader):
     self.model.eval() 
     acc_loss = 0
     acc_accuracy = 0
+    acc_f1_score = 0
     with torch.no_grad():
       for batch in data_loader:
         outputs = self.inference(batch)
@@ -110,20 +114,27 @@ class Learner:
         
         loss = self.bce_loss(outputs, labels)
         acc_loss += loss.item()
-        acc_accuracy += self.compute_accuracy(outputs, labels)
+        accuracy, f1_score = self.compute_metrics(outputs, labels)
+        acc_accuracy += accuracy
+        acc_f1_score += f1_score
 
     acc_loss /= len(data_loader)
     acc_accuracy /= len(data_loader)
-    return acc_loss, acc_accuracy
+    acc_f1_score /= len(data_loader)
+    return acc_loss, acc_accuracy, acc_f1_score
 
-  def compute_accuracy(self, output, labels):
-    """Compute accuracy accprding to the following formula:
-    accuracy = 1 - hamming distance"""
+  def compute_metrics(self, output, labels):
+    """Compute accuracy and f1 score.
+    
+    Accuracy formula:
+    accuracy = 1 - hamming distance
+    """
     with torch.no_grad():
       preds = torch.sigmoid(output).cpu()
       target = labels.cpu().to(torch.int)
       acc = self.hamming_distance(preds, target)
-      return 1 - acc.item()
+      f1_score = self.f1(preds, target)
+      return 1 - acc.item(), f1_score.item()
 
   def update_history_dict(self, loss, val_loss, accuracy, val_accuracy):
     self.history['loss'].append(loss)
@@ -131,7 +142,7 @@ class Learner:
     self.history['val_loss'].append(val_loss)
     self.history['val_accuracy'].append(val_accuracy)
 
-  def should_stop_early(self):
-    return self.history['accuracy'] > 0.98 or self.epochs_val_loss_increase > 4
+  def should_stop_early(self, epochs_val_loss_increase):
+    return self.history['accuracy'][-1] > 0.98 or epochs_val_loss_increase > 4
 
 
