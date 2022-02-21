@@ -19,7 +19,8 @@ def plot_al_results(config: ml_collections.ConfigDict):
     results = pickle.load(f)
 
     # Plot accuracy.
-    sns.lineplot(data=results, x="split", y="accuracy")
+    sns.lineplot(data=results, x="split", y="accuracy", label='RANDOM')
+    plt.legend()
     plt.xlabel('Labeled data size')
     plt.ylabel('Accuracy')
     plt.title('Accuracy for different data sizes')
@@ -27,7 +28,8 @@ def plot_al_results(config: ml_collections.ConfigDict):
 
     # Plot F1-score.
     plt.figure()
-    sns.lineplot(data=results, x="split", y="f1_score")
+    sns.lineplot(data=results, x="split", y="f1_score", label='RANDOM')
+    plt.legend()
     plt.xlabel('Labeled data size')
     plt.ylabel('F1 score')
     plt.title('F1 score for different data sizes')
