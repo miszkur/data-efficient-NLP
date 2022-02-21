@@ -53,12 +53,13 @@ def print_evaluation_report(model, config, test_save_path=None):
   loss /= len(test_loader)
   accuracy /= len(test_loader)
   f1_score /= len(test_loader)
+  print('\nPerformance on the test set')
   print(f'Test loss: {loss:.4f}, accuracy: {accuracy:.4f}, F1-score: {f1_score:.4f}')
 
   print('Per-class metrics')
   y_true = np.concatenate(y_true)
   y_pred = np.concatenate(y_pred)  
-  print(classification_report(y_true, y_pred, target_names=target_names))
+  print(classification_report(y_true, y_pred, target_names=target_names, zero_division=0))
 
   print('Per-class accuracy')
   correctly_classified = (y_pred == y_true)
