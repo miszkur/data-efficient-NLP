@@ -25,7 +25,7 @@ def main():
     assert args.al_strategy is not None
     config.query_strategy = args.al_strategy
     results = run_active_learning_experiment(config, device, Strategy[args.al_strategy])
-    plot_al_results(config)
+    plot_al_results(['RANDOM', 'ENTROPY'], config)
   elif args.experiment == 'supervised':
     config = configs.multilabel_base()
     model = BertClassifier(config=config.bert) 

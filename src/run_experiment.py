@@ -1,5 +1,6 @@
 import ml_collections
 import numpy as np
+import pickle
 import torch
 import os
 
@@ -67,10 +68,8 @@ class MaxEntropyStrategy(QueryStrategy):
 
     # Get the data to label based on entropy values.  
     entropies = np.concatenate(entropies)
-    print(entropies)
     sorted_indices = np.flip(np.argsort(entropies))
     indices_to_label = sorted_indices[:self.sample_size]
-    print(len(indices_to_label))
     data_to_label = torch.utils.data.Subset(self.dataset, indices_to_label)
 
     # Get the rest of dataset (unlabeled).
@@ -88,7 +87,7 @@ def initialize_strategy(strategy: Strategy, train_dataset, config, seed):
 def run_active_learning_experiment(
   config: ml_collections.ConfigDict, 
   device: str, 
-  strategy: Strategy) -> Dict[str, List[float]]:
+  strategy_type: Strategy) -> Dict[str, List[float]]:
   """Run Active Learning experiment. 
   
   Save results to the folder specified in the config.
@@ -109,9 +108,9 @@ def run_active_learning_experiment(
   num_al_iters = config.num_al_iters
   results = {'split': [], 'accuracy': [], 'f1_score':[]}
 
-  for i, seed in enumerate(config.seeds):
-    print(f'=== Active Learning experiment for seed {i+1}/{len(config.seeds)} ===')
-    strategy = initialize_strategy(strategy, train_dataset, config, seed)
+  for al_i, seed in enumerate(config.seeds):
+    print(f'=== Active Learning experiment for seed {al_i+1}/{len(config.seeds)} ===')
+    strategy = initialize_strategy(strategy_type, train_dataset, config, seed)
     
     model = BertClassifier(config=config.bert) 
     model.to(device)
@@ -139,9 +138,10 @@ def run_active_learning_experiment(
       new_labeled_data = strategy.choose_samples_to_label(learner)
       labeled_data = ConcatDataset([labeled_data, new_labeled_data])
 
-  print('Saving results..')
-  results_path = os.path.join(config.results_dir, f'{config.query_strategy}.pkl')
-  with open(al_results_path, 'wb') as fp:
-    pickle.dump(results, fp)
+    print('Saving results..')
+    results_path = os.path.join(config.results_dir, f'{config.query_strategy}.pkl')
+    with open(results_path, 'wb') as fp:
+      pickle.dump(results, fp)
+
   plot_al_results(config)
   return results
