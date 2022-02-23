@@ -7,7 +7,7 @@ from run_experiment import run_active_learning_experiment, Strategy
 from models.bert import BertClassifier
 from train import Learner
 from evaluate import print_evaluation_report
-from visualisation.active_learning import plot_al_results
+from active_learning.visualisation import plot_al_results
 
 
 def main():
@@ -17,15 +17,18 @@ def main():
   parser.add_argument('--experiment', type=str,
                       help='Experiment name')
   parser.add_argument('--al_strategy', type=str,
-                      help='AL strategy to use e.g. RANDOM, ENTROPY')
+                      help='AL strategy to use e.g. RANDOM, MAX_ENTROPY, AVG_ENTROPY')
   args = parser.parse_args()
 
   if args.experiment == 'al':
     config = configs.active_learning_config()
-    assert args.al_strategy is not None
+    allowed_query_strategies = [s.name for s in Strategy]
+    
+    assert args.al_strategy in allowed_query_strategies
+    
     config.query_strategy = args.al_strategy
     results = run_active_learning_experiment(config, device, Strategy[args.al_strategy])
-    plot_al_results(['RANDOM', 'ENTROPY'], config)
+    plot_al_results(['RANDOM', 'MAX_ENTROPY', 'AVG_ENTROPY'], config)
   elif args.experiment == 'supervised':
     config = configs.multilabel_base()
     model = BertClassifier(config=config.bert) 

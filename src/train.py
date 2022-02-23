@@ -73,8 +73,9 @@ class Learner:
       if self.should_stop_early(epochs_val_loss_increase):
         break
 
+    self.model.load_state_dict(best_model)
     if self.results_dir is not None:
-      torch.save(best_model, self.save_model_path)
+      torch.save(self.model.state_dict(), self.save_model_path)
       plot_history(history_dict=self.history, results_dir=self.results_dir)
 
   def inference(self, batch):
@@ -143,6 +144,7 @@ class Learner:
     self.history['val_accuracy'].append(val_accuracy)
 
   def should_stop_early(self, epochs_val_loss_increase):
-    return self.history['accuracy'][-1] > 0.98 or epochs_val_loss_increase > 4
+    return (self.history['accuracy'][-1] > 0.98 and epochs_val_loss_increase > 1) \
+            or epochs_val_loss_increase > 4
 
 
