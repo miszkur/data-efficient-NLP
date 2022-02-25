@@ -5,7 +5,7 @@ import os
 
 from run_experiment import run_active_learning_experiment, Strategy
 from models.bert import BertClassifier
-from train import Learner
+from learner import Learner
 from evaluate import print_evaluation_report
 from active_learning.visualisation import plot_al_results
 
@@ -24,7 +24,7 @@ def main():
     config = configs.active_learning_config()
     allowed_query_strategies = [s.name for s in Strategy]
     
-    assert args.al_strategy in allowed_query_strategies
+    assert args.al_strategy in allowed_query_strategies, f'Please specify a valid AL strategy: {allowed_query_strategies}'
     
     config.query_strategy = args.al_strategy
     results = run_active_learning_experiment(config, device, Strategy[args.al_strategy])
