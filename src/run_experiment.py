@@ -11,20 +11,22 @@ from tqdm import tqdm
 from data_processing.ev_parser import create_dataset, create_dataloader
 from config.config import multilabel_base
 from models.bert import BertClassifier
-from train import Learner
+from learner import Learner
 
 from active_learning.strategy import Strategy
-from active_learning.strategy import RandomStrategy, MaxEntropyStrategy, AvgEntropyStrategy
+import active_learning.strategy as al
 from active_learning.visualisation import plot_al_results
 
 
 def initialize_strategy(strategy: Strategy, train_dataset, config, seed):
   if strategy == Strategy.RANDOM:
-    return RandomStrategy(train_dataset, config.sample_size, config.batch_size, seed)
+    return al.RandomStrategy(train_dataset, config.sample_size, config.batch_size, seed)
   elif strategy == Strategy.AVG_ENTROPY:
-    return AvgEntropyStrategy(train_dataset, config.sample_size, config.batch_size)
+    return al.AvgEntropyStrategy(train_dataset, config.sample_size, config.batch_size)
   elif strategy == Strategy.MAX_ENTROPY:
-    return MaxEntropyStrategy(train_dataset, config.sample_size, config.batch_size)
+    return al.MaxEntropyStrategy(train_dataset, config.sample_size, config.batch_size)
+  elif strategy == Strategy.CAL:
+    return al.CALStrategy(train_dataset, config.sample_size, config.batch_size, seed)
 
 def run_active_learning_experiment(
   config: ml_collections.ConfigDict, 
@@ -77,7 +79,7 @@ def run_active_learning_experiment(
       results['accuracy'].append(accuracy)
       results['f1_score'].append(f1_score)
       
-      new_labeled_data = strategy.choose_samples_to_label(learner)
+      new_labeled_data = strategy.choose_samples_to_label(learner, train_loader)
       labeled_data = ConcatDataset([labeled_data, new_labeled_data])
 
     print('Saving results..')

@@ -12,7 +12,7 @@ class BertClassifier(nn.Module):
     self.linear = nn.Linear(config.output_dim, config.num_classes)
     self.relu = nn.ReLU()
 
-  def forward(self, input_ids, attn_mask, token_type_ids):
+  def forward(self, input_ids, attn_mask, token_type_ids, return_cls=False):
     output = self.bert(
       input_ids, 
       attention_mask=attn_mask, 
@@ -21,5 +21,8 @@ class BertClassifier(nn.Module):
     # pooler_output - CLS token
     dropout_output = self.dropout(output.pooler_output)
     linear_output = self.linear(dropout_output)
+    
+    if return_cls:
+      return linear_output, output.pooler_output
 
     return linear_output
