@@ -2,6 +2,7 @@ import argparse
 import config.config as configs
 import torch
 import os
+import active_learning.visualisation as al_vis
 
 from run_experiment import run_active_learning_experiment, Strategy
 from models.bert import BertClassifier
@@ -25,10 +26,10 @@ def main():
     allowed_query_strategies = [s.name for s in Strategy]
     
     assert args.al_strategy in allowed_query_strategies, f'Please specify a valid AL strategy: {allowed_query_strategies}'
-    
     config.query_strategy = args.al_strategy
-    results = run_active_learning_experiment(config, device, Strategy[args.al_strategy])
-    plot_al_results(['RANDOM', 'MAX_ENTROPY', 'AVG_ENTROPY'], config)
+    # results = run_active_learning_experiment(config, device, Strategy[args.al_strategy])
+    # al_vis.cold_vs_warm_start('AVG_ENTROPY', config)
+    plot_al_results(['RANDOM', 'AVG_ENTROPY', 'MAX_ENTROPY', 'CAL'], config)
   elif args.experiment == 'supervised':
     config = configs.multilabel_base()
     model = BertClassifier(config=config.bert) 
