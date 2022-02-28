@@ -22,9 +22,9 @@ def initialize_strategy(strategy: Strategy, train_dataset, config, seed):
   if strategy == Strategy.RANDOM:
     return al.RandomStrategy(train_dataset, config.sample_size, config.batch_size, seed)
   elif strategy == Strategy.AVG_ENTROPY:
-    return al.AvgEntropyStrategy(train_dataset, config.sample_size, config.batch_size)
+    return al.AvgEntropyStrategy(train_dataset, config.sample_size, config.batch_size, seed)
   elif strategy == Strategy.MAX_ENTROPY:
-    return al.MaxEntropyStrategy(train_dataset, config.sample_size, config.batch_size)
+    return al.MaxEntropyStrategy(train_dataset, config.sample_size, config.batch_size, seed)
   elif strategy == Strategy.CAL:
     return al.CALStrategy(train_dataset, config.sample_size, config.batch_size, seed)
 

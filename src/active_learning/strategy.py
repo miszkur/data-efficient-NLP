@@ -16,9 +16,10 @@ class Strategy(Enum):
 
 class QueryStrategy:
   """Base class for Active Learning query strategies."""
-  def __init__(self, dataset, sample_size, batch_size):
+  def __init__(self, dataset, sample_size, batch_size, seed):
     self.sample_size = sample_size
     self.dataset = dataset
+    self.generator = torch.Generator().manual_seed(seed)
     self.batch_size = batch_size
 
   @abstractmethod
@@ -28,8 +29,7 @@ class QueryStrategy:
 class RandomStrategy(QueryStrategy):
   """Chooses samples to label uniformly at random."""
   def __init__(self, dataset, sample_size=48, batch_size=8, seed=42):
-    super().__init__(dataset, sample_size, batch_size)
-    self.generator = torch.Generator().manual_seed(seed)
+    super().__init__(dataset, sample_size, batch_size, seed)
 
   def choose_samples_to_label(self, learner, train_loader=None):
     data_to_label, unlabeled_data = random_split(
@@ -41,10 +41,20 @@ class RandomStrategy(QueryStrategy):
 
 class AvgEntropyStrategy(QueryStrategy):
   """Chooses samples to label which have the maximum value of normalized entropy."""
-  def __init__(self, dataset, sample_size=48, batch_size=8):
-    super().__init__(dataset, sample_size, batch_size)
+  def __init__(self, dataset, sample_size=48, batch_size=8, seed=42):
+    super().__init__(dataset, sample_size, batch_size, seed)
 
   def choose_samples_to_label(self, learner, train_loader=None):
+    # Take random sample for the first iteration.
+    if train_loader == None:
+      data_to_label, unlabeled_data = random_split(
+        self.dataset, 
+        [self.sample_size, len(self.dataset)-self.sample_size], 
+        generator=self.generator
+      )
+      self.dataset = unlabeled_data
+      return data_to_label
+
     data_loader = DataLoader(
       self.dataset, 
       batch_size=self.batch_size,
@@ -73,10 +83,20 @@ class AvgEntropyStrategy(QueryStrategy):
 
 class MaxEntropyStrategy(QueryStrategy):
   """Chooses samples to label which have the maximum value of normalized entropy."""
-  def __init__(self, dataset, sample_size=48, batch_size=8):
-    super().__init__(dataset, sample_size, batch_size)
+  def __init__(self, dataset, sample_size=48, batch_size=8, seed=42):
+    super().__init__(dataset, sample_size, batch_size, seed)
 
   def choose_samples_to_label(self, learner, train_loader=None):
+    # Take random sample for the first iteration.
+    if train_loader == None:
+      data_to_label, unlabeled_data = random_split(
+        self.dataset, 
+        [self.sample_size, len(self.dataset)-self.sample_size], 
+        generator=self.generator
+      )
+      self.dataset = unlabeled_data
+      return data_to_label
+    
     data_loader = DataLoader(
       self.dataset, 
       batch_size=self.batch_size,
@@ -160,10 +180,6 @@ class CALStrategy(QueryStrategy):
     learner.model.eval()
     with torch.no_grad():
       for batch in tqdm(data_loader, desc="Finding neighbours for every unlabeled data point"):
-        # if num_adv < 66:
-        #   num_adv += 1
-        #   continue
-        # print('e')
         unlab_logits, unlab_embeddings = learner.inference(batch, return_cls=True) # batch_size x num_classes
         neighbour_indices = neigh.kneighbors(X=unlab_embeddings.cpu().numpy(),
         return_distance=False)
