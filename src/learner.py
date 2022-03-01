@@ -7,7 +7,8 @@ import os
 from data_processing.ev_parser import create_dataloader
 from tqdm.auto import tqdm
 from torchmetrics import HammingDistance, F1Score
-from visualisation.utils import plot_history 
+from visualisation.utils import plot_history
+from sklearn.metrics import classification_report 
 
 from transformers import get_cosine_schedule_with_warmup
 
@@ -105,11 +106,17 @@ class Learner:
     accuracy, _ = self.compute_metrics(outputs, labels)
     return loss.item(), accuracy
 
-  def evaluate(self, data_loader):
+  def evaluate(self, data_loader, classes=[]):
     self.model.eval() 
     acc_loss = 0
     acc_accuracy = 0
     acc_f1_score = 0
+    per_class_results = {}
+    for c in classes:
+      per_class_results[c] = {'accuracy': 0, 'f1_score': 0}
+
+    y_true = []
+    y_pred = []
     with torch.no_grad():
       for batch in data_loader:
         outputs = self.inference(batch)
@@ -121,10 +128,37 @@ class Learner:
         acc_accuracy += accuracy
         acc_f1_score += f1_score
 
+        y_true.append(labels.cpu().numpy())
+        y_pred.append(np.round(torch.sigmoid(outputs).cpu().numpy()))
+
     acc_loss /= len(data_loader)
     acc_accuracy /= len(data_loader)
     acc_f1_score /= len(data_loader)
-    return acc_loss, acc_accuracy, acc_f1_score
+
+    if len(classes) == 0:
+      return acc_loss, acc_accuracy, acc_f1_score
+    
+    y_true = np.concatenate(y_true)
+    y_pred = np.concatenate(y_pred)  
+    report = classification_report(
+      y_true, y_pred, output_dict=True, zero_division=0)
+    correctly_classified = (y_pred == y_true)
+    acc = correctly_classified.sum(axis=0) / y_pred.shape[0]
+    per_class_results = {}
+    for c in classes:
+      per_class_results[c] = {
+        'f1_score': report[f'{c}']['f1-score'], 
+        'accuracy': acc[c],
+        'precision': report[f'{c}']['precision'], 
+        'recall': report[f'{c}']['recall']}
+  
+    return {
+      'loss': acc_loss,
+      'accuracy': acc_accuracy, 
+      'f1_score': acc_f1_score, 
+      'classes': per_class_results
+    }
+    
 
   def compute_metrics(self, output, labels):
     """Compute accuracy and f1 score.
@@ -138,6 +172,17 @@ class Learner:
       acc = self.hamming_distance(preds, target)
       f1_score = self.f1(preds, target)
       return 1 - acc.item(), f1_score.item()
+
+  def per_class_results(self, classes):
+    with torch.no_grad():
+      preds = torch.sigmoid(output).cpu()
+      target = labels.cpu().to(torch.int)
+      acc = self.hamming_distance(preds, target)
+      f1_score = self.f1(preds, target)
+      return 1 - acc.item(), f1_score.item()
+    for c in classes:
+      per_class_results[c] = {'accuracy': 0, 'f1_score': 0}
+
 
   def update_history_dict(self, loss, val_loss, accuracy, val_accuracy):
     self.history['loss'].append(loss)
