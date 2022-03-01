@@ -126,8 +126,7 @@ class MaxEntropyStrategy(QueryStrategy):
 class CALStrategy(QueryStrategy):
   """Chooses contranstive examples, see: https://arxiv.org/pdf/2109.03764.pdf."""
   def __init__(self, dataset, sample_size=48, batch_size=8, seed=42):
-    super().__init__(dataset, sample_size, batch_size)
-    self.generator = torch.Generator().manual_seed(seed)
+    super().__init__(dataset, sample_size, batch_size, seed)
     self.num_neighbors = 10 # default value used in CAL repo
 
   def process_labeled_data(self, learner, train_loader):
@@ -165,15 +164,12 @@ class CALStrategy(QueryStrategy):
     criterion = nn.BCEWithLogitsLoss()
     num_classes = train_labels.shape[1]
 
-
     unlab_batch_size = 128
     data_loader = DataLoader(
       self.dataset, 
       batch_size=unlab_batch_size,
       shuffle=False)
 
-    print(len(self.dataset))
-  
     kl_scores = []
     num_adv = 0
     distances = []
