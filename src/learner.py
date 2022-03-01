@@ -25,7 +25,7 @@ class Learner:
       self.save_model_path = os.path.join(results_dir, 'bert' + '.pth')
     self.results_dir = results_dir
 
-  def train(self, config, train_loader=None):
+  def train(self, config, train_loader=None, validation_loader=None):
     num_epochs = config.num_epochs
     best_model = None
     epochs_val_loss_increase = 0
@@ -37,7 +37,8 @@ class Learner:
 
     if train_loader is None:
       train_loader = create_dataloader(config)
-    validation_loader = create_dataloader(config, 'valid')
+    if validation_loader is None:
+      validation_loader, _ = create_dataloader(config, 'valid')
 
     num_training_steps = num_epochs * len(train_loader)
     val_loss_prev = 1

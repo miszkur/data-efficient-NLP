@@ -47,7 +47,7 @@ def run_active_learning_experiment(
   """
   assert os.path.isdir(config.results_dir), 'Invalid path to save experiment results!'
 
-  test_loader = create_dataloader(config, 'test')
+  valid_loader, test_loader = create_dataloader(config, 'valid')
   train_dataset = create_dataset()
   num_al_iters = config.num_al_iters
   results = {'split': [], 'accuracy': [], 'f1_score':[]}
@@ -72,7 +72,7 @@ def run_active_learning_experiment(
       model.to(device)
       # Train
       learner = Learner(device, model)
-      learner.train(config, train_loader)
+      learner.train(config, train_loader, valid_loader)
       # Test
       loss, accuracy, f1_score = learner.evaluate(test_loader)
       print(f'Test loss: {loss}, accuracy: {accuracy}, f1 score: {f1_score}')

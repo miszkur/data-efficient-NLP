@@ -22,9 +22,12 @@ def compute_accuracy_and_f1(output, labels):
     acc = hamming_distance(preds, target)
     return 1 - acc.item(), f1(preds, target)
 
-def print_evaluation_report(model, config, test_save_path=None):
+def print_evaluation_report(model, config, test_save_path=None, split='test'):
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-  test_loader, target_names = create_dataloader(config, 'test', return_target_names=True)
+  if split == 'test':
+    test_loader, target_names = create_dataloader(config, 'test', return_target_names=True)
+  else:
+    (_, test_loader), target_names = create_dataloader(config, 'valid', return_target_names=True)
 
   model.eval()
   criterion = nn.BCEWithLogitsLoss()

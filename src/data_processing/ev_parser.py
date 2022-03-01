@@ -1,5 +1,5 @@
 from transformers import BertTokenizer
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 from ml_collections import ConfigDict
 
 import torch
@@ -66,7 +66,10 @@ def create_dataset(split='train') -> Dataset:
   tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
   return EvDataset(df, tokenizer)
 
-def create_dataloader(config: ConfigDict, split='train', return_target_names=False) -> DataLoader:
+def create_dataloader(
+  config: ConfigDict, 
+  split='train', 
+  return_target_names=False) -> DataLoader:
   """Load dataset and wrap it in DataLoader.
 
   Args:
@@ -88,10 +91,26 @@ def create_dataloader(config: ConfigDict, split='train', return_target_names=Fal
   
   tokenizer = BertTokenizer.from_pretrained(config.bert.bert_version)
   ds = EvDataset(df, tokenizer)
-  dl = DataLoader(
-    ds, 
-    batch_size=config.batch_size,
-    shuffle=is_training)
+
+  if split == 'valid': 
+    # Divide validation set into validation and test set.
+    valid, test = random_split(
+      ds, [len(ds)//2, len(ds) - len(ds)//2], generator=torch.Generator().manual_seed(42))
+    dl = (
+      DataLoader(
+      valid, 
+      batch_size=config.batch_size,
+      shuffle=False),
+      DataLoader(
+      test, 
+      batch_size=config.batch_size,
+      shuffle=False)
+    )
+  else:
+    dl = DataLoader(
+      ds, 
+      batch_size=config.batch_size,
+      shuffle=is_training)
 
   if return_target_names:
     return dl, ds.target_names
