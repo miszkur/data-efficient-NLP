@@ -31,7 +31,8 @@ def initialize_strategy(strategy: Strategy, train_dataset, config, seed):
 def run_active_learning_experiment(
   config: ml_collections.ConfigDict, 
   device: str, 
-  strategy_type: Strategy) -> Dict[str, List[float]]:
+  strategy_type: Strategy,
+  classes_to_track=[0,1]) -> Dict[str, List[float]]:
   """Run Active Learning experiment. 
   
   Save results to the folder specified in the config.
@@ -40,6 +41,8 @@ def run_active_learning_experiment(
   Args:
       config (ml_collections): configuration dictionary.
       device (str): cpu or cuda. 
+      strategy_type (Strategy): AL strategy to use.
+      classes_to_track (list, optional): Specifies for which classes metrics will be tracked. Defaults to [0,1] - 'functionality' and 'range_anxiety'.
 
   Returns:
       Dict[str, List[float]]: results dictionary with keys: 
@@ -51,6 +54,9 @@ def run_active_learning_experiment(
   train_dataset = create_dataset()
   num_al_iters = config.num_al_iters
   results = {'split': [], 'accuracy': [], 'f1_score':[]}
+  for class_index in classes_to_track:
+    results[class_index] = {
+      'accuracy': [], 'f1_score':[], 'recall': [], 'precision':[]}
 
   for al_i, seed in enumerate(config.seeds):
     print(f'=== Active Learning experiment for seed {al_i+1}/{len(config.seeds)} ===')
@@ -74,10 +80,17 @@ def run_active_learning_experiment(
       learner = Learner(device, model)
       learner.train(config, train_loader, valid_loader)
       # Test
-      loss, accuracy, f1_score = learner.evaluate(test_loader)
+      metrics = learner.evaluate(test_loader, classes=classes_to_track)
+      loss = metrics['loss']
+      accuracy = metrics['accuracy']
+      f1_score = metrics['f1_score']
       print(f'Test loss: {loss}, accuracy: {accuracy}, f1 score: {f1_score}')
       results['accuracy'].append(accuracy)
       results['f1_score'].append(f1_score)
+      for class_index in classes_to_track:
+        for key, val in metrics[class_index].items():
+          if key in list(results[class_index].keys()):
+            results[class_index][key].append(value)
       
       new_labeled_data = strategy.choose_samples_to_label(learner, train_loader)
       labeled_data = ConcatDataset([labeled_data, new_labeled_data])
