@@ -2,6 +2,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import ml_collections
 import pickle
+import numpy as np
 import os
 
 sns.set_style('darkgrid')
@@ -14,6 +15,9 @@ def plot_al_results(strategies, config: ml_collections.ConfigDict):
       config (ml_collections.ConfigDict): configuration dictionary. 
       It should contain path to experiment results and query strategy used in AL.
   """
+  
+
+
   for strategy in strategies:
     results_path = os.path.join(config.results_dir, f'{strategy}.pkl')
     
@@ -26,7 +30,19 @@ def plot_al_results(strategies, config: ml_collections.ConfigDict):
       plt.xlabel('Labeled data size')
       plt.ylabel('Accuracy')
       plt.title('Accuracy for different data sizes')
-      plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'accuracy.png'))
+      x_axis = results['split']
+
+  results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
+  with open(results_path, 'rb') as f:
+    results_supervised = pickle.load(f)
+    supervised_results_dict = {'split': [], 'accuracy': [], 'f1_score':[]}
+    for split in set(x_axis):
+      for k, v in results_supervised.items():
+        supervised_results_dict[k] += v  
+      supervised_results_dict['split'] += [split for _ in range(len(v))]
+
+    sns.lineplot(data=supervised_results_dict, x='split', y='accuracy', label='Full supervision', color='black')
+  plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'accuracy.png'))
 
   # Plot F1-score.
   plt.figure()
@@ -40,7 +56,9 @@ def plot_al_results(strategies, config: ml_collections.ConfigDict):
       plt.xlabel('Labeled data size')
       plt.ylabel('F1 score')
       plt.title('F1 score for different data sizes')
-      plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'f1_score.png'))
+
+  sns.lineplot(data=supervised_results_dict, x='split', y='f1_score', label='Full supervision', color='black')
+  plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'f1_score.png'))
 
 def cold_vs_warm_start(strategy: str, config):
   results_path = os.path.join(config.results_dir, f'{strategy}.pkl')
