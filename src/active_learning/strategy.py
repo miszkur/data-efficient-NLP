@@ -13,6 +13,7 @@ class Strategy(Enum):
   MAX_ENTROPY = 2
   AVG_ENTROPY = 3
   CAL = 4
+  CLASS_ENTROPY = 5
 
 class QueryStrategy:
   """Base class for Active Learning query strategies."""
@@ -39,10 +40,31 @@ class RandomStrategy(QueryStrategy):
     self.dataset = unlabeled_data
     return data_to_label
 
-class AvgEntropyStrategy(QueryStrategy):
+class EntropyStrategy(QueryStrategy):
   """Chooses samples to label which have the maximum value of normalized entropy."""
-  def __init__(self, dataset, sample_size=48, batch_size=8, seed=42):
+  def __init__(self, dataset, strategy, sample_size=48, batch_size=8, seed=42, class_index=None):
     super().__init__(dataset, sample_size, batch_size, seed)
+    if strategy == Strategy.AVG_ENTROPY:
+      self.compute_entropy = self.avg_entropy
+    elif strategy == Strategy.MAX_ENTROPY:
+      self.compute_entropy = self.max_entropy
+    elif strategy == Strategy.CLASS_ENTROPY:
+      self.class_index = class_index
+      self.compute_entropy = self.class_entropy
+
+  def avg_entropy(self, probabilities):
+    p = probabilities
+    entropy = -(p*np.log(p)+(1-p)*np.log(1-p))
+    return np.sum(entropy, axis=1) / entropy.shape[1]
+
+  def max_entropy(self, probabilities):
+    p = probabilities
+    entropy = -(p*np.log(p)+(1-p)*np.log(1-p))
+    return np.max(entropy, axis=1)
+
+  def class_entropy(self, probabilities):
+    p = probabilities[:, self.class_index]
+    return -(p*np.log(p)+(1-p)*np.log(1-p))
 
   def choose_samples_to_label(self, learner, train_loader=None):
     # Take random sample for the first iteration.
@@ -57,7 +79,7 @@ class AvgEntropyStrategy(QueryStrategy):
 
     data_loader = DataLoader(
       self.dataset, 
-      batch_size=self.batch_size,
+      batch_size=32,
       shuffle=False)
 
     entropies = []
@@ -66,54 +88,11 @@ class AvgEntropyStrategy(QueryStrategy):
       for batch in tqdm(data_loader):
         output = learner.inference(batch) # batch_size x num_classes
         p = torch.sigmoid(output).cpu().detach().numpy()
-        entropy = -(p*np.log(p)+(1-p)*np.log(1-p))
-        normalized_entropy = np.sum(entropy, axis=1) / entropy.shape[1]
-        entropies.append(normalized_entropy)
+        entropies.append(self.compute_entropy(p))
 
     # Get the data to label based on entropy values.  
     entropies = np.concatenate(entropies)
 
-    partitioned_indices = np.argpartition(entropies, -self.sample_size)
-    indices_to_label = partitioned_indices[-self.sample_size:]
-    unlabeled_data_indices = partitioned_indices[:-self.sample_size]
-    data_to_label = torch.utils.data.Subset(self.dataset, indices_to_label)
-    self.dataset = torch.utils.data.Subset(self.dataset, unlabeled_data_indices)
-
-    return data_to_label
-
-class MaxEntropyStrategy(QueryStrategy):
-  """Chooses samples to label which have the maximum value of normalized entropy."""
-  def __init__(self, dataset, sample_size=48, batch_size=8, seed=42):
-    super().__init__(dataset, sample_size, batch_size, seed)
-
-  def choose_samples_to_label(self, learner, train_loader=None):
-    # Take random sample for the first iteration.
-    if train_loader == None:
-      data_to_label, unlabeled_data = random_split(
-        self.dataset, 
-        [self.sample_size, len(self.dataset)-self.sample_size], 
-        generator=self.generator
-      )
-      self.dataset = unlabeled_data
-      return data_to_label
-    
-    data_loader = DataLoader(
-      self.dataset, 
-      batch_size=self.batch_size,
-      shuffle=False)
-
-    entropies = []
-    learner.model.eval()
-    with torch.no_grad():
-      for batch in tqdm(data_loader):
-        output = learner.inference(batch) # batch_size x num_classes
-        p = torch.sigmoid(output).cpu().detach().numpy()
-        entropy = -(p*np.log(p)+(1-p)*np.log(1-p))
-        max_entropy = np.max(entropy, axis=1)
-        entropies.append(max_entropy)
-
-    entropies = np.concatenate(entropies)
-    
     partitioned_indices = np.argpartition(entropies, -self.sample_size)
     indices_to_label = partitioned_indices[-self.sample_size:]
     unlabeled_data_indices = partitioned_indices[:-self.sample_size]

@@ -18,20 +18,27 @@ import active_learning.strategy as al
 from active_learning.visualisation import plot_al_results
 
 
-def initialize_strategy(strategy: Strategy, train_dataset, config, seed):
+def initialize_strategy(strategy: Strategy, train_dataset, config, seed, al_class):
   if strategy == Strategy.RANDOM:
     return al.RandomStrategy(train_dataset, config.sample_size, config.batch_size, seed)
   elif strategy == Strategy.AVG_ENTROPY:
-    return al.AvgEntropyStrategy(train_dataset, config.sample_size, config.batch_size, seed)
+    return al.EntropyStrategy(
+      train_dataset, strategy, config.sample_size, config.batch_size, seed)
   elif strategy == Strategy.MAX_ENTROPY:
-    return al.MaxEntropyStrategy(train_dataset, config.sample_size, config.batch_size, seed)
+    return al.EntropyStrategy(
+      train_dataset, strategy, config.sample_size, config.batch_size, seed)
+  elif strategy == Strategy.CLASS_ENTROPY:
+    return al.EntropyStrategy(
+      train_dataset, strategy, config.sample_size, config.batch_size, seed, class_index=al_class)
   elif strategy == Strategy.CAL:
     return al.CALStrategy(train_dataset, config.sample_size, config.batch_size, seed)
+
 
 def run_active_learning_experiment(
   config: ml_collections.ConfigDict, 
   device: str, 
   strategy_type: Strategy,
+  al_class: int,
   classes_to_track=[0,1]) -> Dict[str, List[float]]:
   """Run Active Learning experiment. 
   
@@ -42,6 +49,7 @@ def run_active_learning_experiment(
       config (ml_collections): configuration dictionary.
       device (str): cpu or cuda. 
       strategy_type (Strategy): AL strategy to use.
+      al_class (int): Class which will guide AL. (Not used by all strategies).
       classes_to_track (list, optional): Specifies for which classes metrics will be tracked. Defaults to [0,1] - 'functionality' and 'range_anxiety'.
 
   Returns:
@@ -60,7 +68,7 @@ def run_active_learning_experiment(
 
   for al_i, seed in enumerate(config.seeds):
     print(f'=== Active Learning experiment for seed {al_i+1}/{len(config.seeds)} ===')
-    strategy = initialize_strategy(strategy_type, train_dataset, config, seed)
+    strategy = initialize_strategy(strategy_type, train_dataset, config, seed, al_class)
     
     model = BertClassifier(config=config.bert) 
     model.to(device)
@@ -88,9 +96,9 @@ def run_active_learning_experiment(
       results['accuracy'].append(accuracy)
       results['f1_score'].append(f1_score)
       for class_index in classes_to_track:
-        for key, val in metrics[class_index].items():
-          if key in list(results[class_index].keys()):
-            results[class_index][key].append(value)
+        for metric_name, value in metrics['classes'][class_index].items():
+          if metric_name in list(results[class_index].keys()):
+            results[class_index][metric_name].append(value)
       
       new_labeled_data = strategy.choose_samples_to_label(learner, train_loader)
       labeled_data = ConcatDataset([labeled_data, new_labeled_data])
