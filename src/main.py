@@ -40,10 +40,10 @@ def main():
     # plot_al_results(['RANDOM', 'AVG_ENTROPY', 'MAX_ENTROPY', 'CAL'], config)
     # al_vis.plot_metrics_for_classes(config, ['f1_score', 'accuracy', 'precision', 'recall'], [0,1], ['RANDOM', 'MAX_ENTROPY'])
   elif args.experiment == 'supervised':
+    config = configs.multilabel_base()
     valid_loader, test_loader = create_dataloader(config, 'valid')
     results = {'accuracy': [], 'f1_score':[]}
     for _ in range(5):
-      config = configs.multilabel_base()
       model = BertClassifier(config=config.bert) 
       model.to(device)
       # Train
