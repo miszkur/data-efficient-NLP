@@ -15,9 +15,6 @@ def plot_al_results(strategies, config: ml_collections.ConfigDict):
       config (ml_collections.ConfigDict): configuration dictionary. 
       It should contain path to experiment results and query strategy used in AL.
   """
-  
-
-
   for strategy in strategies:
     results_path = os.path.join(config.results_dir, f'{strategy}.pkl')
     
@@ -88,3 +85,20 @@ def cold_vs_warm_start(strategy: str, config):
       plt.ylabel('F1 score')
       plt.title('F1 score for different data sizes')
       plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'{strategy}_f1_score.png'))
+
+def plot_metrics_for_classes(config, metrics, classes, strategies, savedir='class_results'):
+  for class_index in classes:
+    for metric in metrics:
+      plt.figure()
+      for strategy in strategies:
+        results_path = os.path.join('../results/al', f'{strategy}.pkl')
+        
+        with open(results_path, 'rb') as f:
+          results = pickle.load(f)
+
+          sns.lineplot(x=results['split'], y=results[class_index][metric], label=strategy)
+          plt.legend()
+          plt.xlabel('Labeled data size')
+          plt.ylabel(metric)
+          plt.title(f'{metric} for different data sizes, class {class_index}')
+      plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, savedir, f'{metric}_class{class_index}.png'))

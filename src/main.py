@@ -26,18 +26,19 @@ def main():
                       help='Class which will guide AL.')
 
   args = parser.parse_args()
-
+  
   if args.experiment == 'al':
     config = configs.active_learning_config()
     allowed_query_strategies = [s.name for s in Strategy]
-    
+
     assert args.al_strategy in allowed_query_strategies, f'Please specify a valid AL strategy: {allowed_query_strategies}'
    
     config.query_strategy = args.al_strategy
     results = run_active_learning_experiment(config, device, Strategy[args.al_strategy], al_class=args.al_class)
     # Visualisation
     # al_vis.cold_vs_warm_start('AVG_ENTROPY', config)
-    plot_al_results(['RANDOM', 'AVG_ENTROPY', 'MAX_ENTROPY', 'CAL'], config)
+    # plot_al_results(['RANDOM', 'AVG_ENTROPY', 'MAX_ENTROPY', 'CAL'], config)
+    # al_vis.plot_metrics_for_classes(config, ['f1_score', 'accuracy', 'precision', 'recall'], [0,1], ['RANDOM', 'MAX_ENTROPY'])
   elif args.experiment == 'supervised':
     valid_loader, test_loader = create_dataloader(config, 'valid')
     results = {'accuracy': [], 'f1_score':[]}
