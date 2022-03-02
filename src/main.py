@@ -24,6 +24,8 @@ def main():
                       help='AL strategy to use e.g. RANDOM, MAX_ENTROPY, AVG_ENTROPY')
   parser.add_argument('--al_class', type=int, default=None,
                       help='Class which will guide AL.')
+  parser.add_argument('--al_stratified', action='store_true',
+                      help='Initial data batch will be created with stratified sampling.')
 
   args = parser.parse_args()
   
@@ -34,7 +36,12 @@ def main():
     assert args.al_strategy in allowed_query_strategies, f'Please specify a valid AL strategy: {allowed_query_strategies}'
    
     config.query_strategy = args.al_strategy
-    results = run_active_learning_experiment(config, device, Strategy[args.al_strategy], al_class=args.al_class)
+    results = run_active_learning_experiment(
+      config, 
+      device=device,
+      strategy_type=Strategy[args.al_strategy], 
+      al_class=args.al_class, 
+      first_sample_stratified=args.al_stratified)
     # Visualisation
     # al_vis.cold_vs_warm_start('AVG_ENTROPY', config)
     # plot_al_results(['RANDOM', 'AVG_ENTROPY', 'MAX_ENTROPY', 'CAL'], config)
