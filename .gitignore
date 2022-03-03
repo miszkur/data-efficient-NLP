@@ -1,3 +1,4 @@
 .home/
 __pycache__/
 ***/bert.pth
+.env

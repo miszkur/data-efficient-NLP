@@ -42,9 +42,8 @@ def get_stratified_sample(dataset, config, strategy):
 
   x_train, _, x_test, _ = iterative_train_test_split(
     X.reshape(-1, 1), y, test_size=config.sample_size / len(dataset))
-  print(x_test.shape)
   labeled_samples = torch.utils.data.Subset(dataset, x_test.reshape(-1,))
-  unlabeled_samples = torch.utils.data.Subset(dataset, x_train)
+  unlabeled_samples = torch.utils.data.Subset(dataset, x_train.reshape(-1,))
   strategy.dataset = unlabeled_samples
   return labeled_samples
 
@@ -121,7 +120,10 @@ def run_active_learning_experiment(
       labeled_data = ConcatDataset([labeled_data, new_labeled_data])
 
     print('Saving results..')
-    results_path = os.path.join(config.results_dir, f'{config.query_strategy}.pkl')
+    filename = config.query_strategy
+    if first_sample_stratified:
+      filename += '_startified'
+    results_path = os.path.join(config.results_dir, f'{filename}.pkl')
     with open(results_path, 'wb') as fp:
       pickle.dump(results, fp)
 
