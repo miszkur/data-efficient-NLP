@@ -86,7 +86,7 @@ def cold_vs_warm_start(strategy: str, config):
       plt.title('F1 score for different data sizes')
       plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'{strategy}_f1_score.png'))
 
-def plot_metrics_for_classes(config, metrics, classes, strategies, savedir='class_results'):
+def plot_metrics_for_classes(config, metrics, classes, strategies, class_names, savedir='class_results'):
   for class_index in classes:
     for metric in metrics:
       plt.figure()
@@ -100,5 +100,5 @@ def plot_metrics_for_classes(config, metrics, classes, strategies, savedir='clas
           plt.legend()
           plt.xlabel('Labeled data size')
           plt.ylabel(metric)
-          plt.title(f'{metric} for different data sizes, class {class_index}')
+          plt.title(f'{metric} for different data sizes for {class_names[class_index]} class')
       plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, savedir, f'{metric}_class{class_index}.png'))
