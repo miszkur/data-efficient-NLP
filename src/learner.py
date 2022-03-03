@@ -137,7 +137,8 @@ class Learner:
 
     if len(classes) == 0:
       return acc_loss, acc_accuracy, acc_f1_score
-    
+
+    # Per-class metrics.
     y_true = np.concatenate(y_true)
     y_pred = np.concatenate(y_pred)  
     report = classification_report(
@@ -150,7 +151,8 @@ class Learner:
         'f1_score': report[f'{c}']['f1-score'], 
         'accuracy': acc[c],
         'precision': report[f'{c}']['precision'], 
-        'recall': report[f'{c}']['recall']}
+        'recall': report[f'{c}']['recall']
+      }
   
     return {
       'loss': acc_loss,
@@ -172,16 +174,6 @@ class Learner:
       acc = self.hamming_distance(preds, target)
       f1_score = self.f1(preds, target)
       return 1 - acc.item(), f1_score.item()
-
-  def per_class_results(self, classes):
-    with torch.no_grad():
-      preds = torch.sigmoid(output).cpu()
-      target = labels.cpu().to(torch.int)
-      acc = self.hamming_distance(preds, target)
-      f1_score = self.f1(preds, target)
-      return 1 - acc.item(), f1_score.item()
-    for c in classes:
-      per_class_results[c] = {'accuracy': 0, 'f1_score': 0}
 
 
   def update_history_dict(self, loss, val_loss, accuracy, val_accuracy):
