@@ -122,7 +122,7 @@ def run_active_learning_experiment(
     print('Saving results..')
     filename = config.query_strategy
     if first_sample_stratified:
-      filename += '_startified'
+      filename += '_stratified'
     results_path = os.path.join(config.results_dir, f'{filename}.pkl')
     with open(results_path, 'wb') as fp:
       pickle.dump(results, fp)
