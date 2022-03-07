@@ -4,6 +4,8 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader, random_split
 from abc import abstractmethod
+from sklearn.cluster import KMeans
+from scipy.spatial.distance import cdist
 from torch import nn
 from enum import Enum
 from tqdm import tqdm
@@ -13,7 +15,6 @@ class Strategy(Enum):
   MAX_ENTROPY = 2
   AVG_ENTROPY = 3
   CAL = 4
-  CLASS_ENTROPY = 5
 
 class QueryStrategy:
   """Base class for Active Learning query strategies."""
@@ -42,15 +43,12 @@ class RandomStrategy(QueryStrategy):
 
 class EntropyStrategy(QueryStrategy):
   """Chooses samples to label which have the maximum value of normalized entropy."""
-  def __init__(self, dataset, strategy, sample_size=48, batch_size=8, seed=42, class_index=None):
+  def __init__(self, dataset, strategy, sample_size=48, batch_size=8, seed=42):
     super().__init__(dataset, sample_size, batch_size, seed)
     if strategy == Strategy.AVG_ENTROPY:
       self.compute_entropy = self.avg_entropy
     elif strategy == Strategy.MAX_ENTROPY:
       self.compute_entropy = self.max_entropy
-    elif strategy == Strategy.CLASS_ENTROPY:
-      self.class_index = class_index
-      self.compute_entropy = self.class_entropy
 
   def avg_entropy(self, probabilities):
     p = probabilities
@@ -61,10 +59,6 @@ class EntropyStrategy(QueryStrategy):
     p = probabilities
     entropy = -(p*np.log(p)+(1-p)*np.log(1-p))
     return np.max(entropy, axis=1)
-
-  def class_entropy(self, probabilities):
-    p = probabilities[:, self.class_index]
-    return -(p*np.log(p)+(1-p)*np.log(1-p))
 
   def choose_samples_to_label(self, learner, train_loader=None):
     # Take random sample for the first iteration.
