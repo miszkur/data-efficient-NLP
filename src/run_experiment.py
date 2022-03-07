@@ -3,9 +3,11 @@ import numpy as np
 import pickle
 import torch
 import os
+import time
 
 from skmultilearn.model_selection import iterative_train_test_split
 from torch.utils.data import ConcatDataset, DataLoader
+from codecarbon import EmissionsTracker
 from typing import Dict, List
 from tqdm import tqdm
 
@@ -28,9 +30,6 @@ def initialize_strategy(strategy: Strategy, train_dataset, config, seed, al_clas
   elif strategy == Strategy.MAX_ENTROPY:
     return al.EntropyStrategy(
       train_dataset, strategy, config.sample_size, config.batch_size, seed)
-  elif strategy == Strategy.CLASS_ENTROPY:
-    return al.EntropyStrategy(
-      train_dataset, strategy, config.sample_size, config.batch_size, seed, class_index=al_class)
   elif strategy == Strategy.CAL:
     return al.CALStrategy(train_dataset, config.sample_size, config.batch_size, seed)
 
@@ -46,6 +45,21 @@ def get_stratified_sample(dataset, config, strategy):
   unlabeled_samples = torch.utils.data.Subset(dataset, x_train.reshape(-1,))
   strategy.dataset = unlabeled_samples
   return labeled_samples
+
+def initialize_results_dict(classes_to_track):
+  results = {
+    'split': [], 
+    'accuracy': [], 
+    'f1_score':[], 
+    'train_time': [], 
+    'sampling_time': [],
+    'sampling_emissions': [],
+    'al_iteration_time': []
+  }
+  for class_index in classes_to_track:
+    results[class_index] = {
+      'accuracy': [], 'f1_score':[], 'recall': [], 'precision':[]}
+  return results
 
 def run_active_learning_experiment(
   config: ml_collections.ConfigDict, 
@@ -75,10 +89,7 @@ def run_active_learning_experiment(
   valid_loader, test_loader = create_dataloader(config, 'valid')
   train_dataset = create_dataset()
   num_al_iters = config.num_al_iters
-  results = {'split': [], 'accuracy': [], 'f1_score':[]}
-  for class_index in classes_to_track:
-    results[class_index] = {
-      'accuracy': [], 'f1_score':[], 'recall': [], 'precision':[]}
+  results = initialize_results_dict(classes_to_track)
 
   for al_i, seed in enumerate(config.seeds):
     print(f'=== Active Learning experiment for seed {al_i+1}/{len(config.seeds)} ===')
@@ -91,6 +102,8 @@ def run_active_learning_experiment(
       model.to(device)
       learner = Learner(device, model)
       labeled_data = strategy.choose_samples_to_label(learner)
+    
+    al_iteration_start_time = time.time()
     for i in range(num_al_iters):
       results['split'].append(len(labeled_data))
       train_loader = DataLoader(
@@ -102,7 +115,9 @@ def run_active_learning_experiment(
       model.to(device)
       # Train
       learner = Learner(device, model)
+      train_start_time = time.time()
       learner.train(config, train_loader, valid_loader)
+      results['train_time'].append(time.time() - train_start_time)
       # Test
       metrics = learner.evaluate(test_loader, classes=classes_to_track)
       loss = metrics['loss']
@@ -115,9 +130,17 @@ def run_active_learning_experiment(
         for metric_name, value in metrics['classes'][class_index].items():
           if metric_name in list(results[class_index].keys()):
             results[class_index][metric_name].append(value)
-      
-      new_labeled_data = strategy.choose_samples_to_label(learner, train_loader)
-      labeled_data = ConcatDataset([labeled_data, new_labeled_data])
+
+      if i < num_al_iters-1:
+        tracker = EmissionsTracker()
+        tracker.start()
+        sampling_start_time = time.time()
+        new_labeled_data = strategy.choose_samples_to_label(learner, train_loader)
+        results['sampling_time'].append(time.time() - sampling_start_time)
+        results['sampling_emissions'].append(tracker.stop())
+        labeled_data = ConcatDataset([labeled_data, new_labeled_data])
+
+    results['al_iteration_time'].append(time.time() - al_iteration_start_time)
 
     print('Saving results..')
     filename = config.query_strategy

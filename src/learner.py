@@ -15,7 +15,8 @@ from transformers import get_cosine_schedule_with_warmup
 class Learner:
   def __init__(self, device, model, results_dir=None, num_classes=8):
     self.hamming_distance = HammingDistance()
-    self.f1 = F1Score(num_classes=num_classes)
+    self.f1_micro = F1Score(num_classes=num_classes, average='micro')
+    self.f1_macro = F1Score(num_classes=num_classes, average='macro')
     self.device = device
     self.history = {
       'loss': [], 'val_loss': [], 'accuracy': [], 'val_accuracy': []
@@ -172,7 +173,7 @@ class Learner:
       preds = torch.sigmoid(output).cpu()
       target = labels.cpu().to(torch.int)
       acc = self.hamming_distance(preds, target)
-      f1_score = self.f1(preds, target)
+      f1_score = self.f1_macro(preds, target)
       return 1 - acc.item(), f1_score.item()
 
 

@@ -8,3 +8,4 @@ scikit-learn
 seaborn
 typing
 scikit-multilearn
+codecarbon
