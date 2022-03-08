@@ -144,25 +144,17 @@ class CALStrategy(QueryStrategy):
       shuffle=False)
 
     kl_scores = []
-    num_adv = 0
-    distances = []
     learner.model.eval()
     with torch.no_grad():
       for batch in tqdm(data_loader, desc="Finding neighbours for every unlabeled data point"):
         unlab_logits, unlab_embeddings = learner.inference(batch, return_cls=True) # batch_size x num_classes
         neighbour_indices = neigh.kneighbors(X=unlab_embeddings.cpu().numpy(),
         return_distance=False)
-        # Labeled neigh labels
         batch_size = neighbour_indices.shape[0]
         neigh_labels = torch.reshape(
           train_labels[neighbour_indices.flatten()], 
           (batch_size, self.num_neighbors, num_classes)) 
-        neigh_logits = torch.reshape(
-          train_logits[neighbour_indices.flatten()], 
-          (batch_size, self.num_neighbors, num_classes)) 
-        neigh_preds = torch.round(torch.sigmoid(neigh_logits))
 
-        unlab_pred = torch.round(torch.sigmoid(unlab_logits))
         for i, label in enumerate(neigh_labels):
           x = unlab_logits[i].repeat(self.num_neighbors, 1)
           kl = criterion(x.cpu(), label)

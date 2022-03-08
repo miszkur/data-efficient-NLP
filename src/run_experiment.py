@@ -21,7 +21,7 @@ import active_learning.strategy as al
 from active_learning.visualisation import plot_al_results
 
 
-def initialize_strategy(strategy: Strategy, train_dataset, config, seed, al_class):
+def initialize_strategy(strategy: Strategy, train_dataset, config, seed):
   if strategy == Strategy.RANDOM:
     return al.RandomStrategy(train_dataset, config.sample_size, config.batch_size, seed)
   elif strategy == Strategy.AVG_ENTROPY:
@@ -65,7 +65,6 @@ def run_active_learning_experiment(
   config: ml_collections.ConfigDict, 
   device: str, 
   strategy_type: Strategy,
-  al_class: int,
   classes_to_track=[0,1],
   first_sample_stratified=False) -> Dict[str, List[float]]:
   """Run Active Learning experiment. 
@@ -77,7 +76,6 @@ def run_active_learning_experiment(
       config (ml_collections): configuration dictionary.
       device (str): cpu or cuda. 
       strategy_type (Strategy): AL strategy to use.
-      al_class (int): Class which will guide AL. (Not used by all strategies).
       classes_to_track (list, optional): Specifies for which classes metrics will be tracked. Defaults to [0,1] - 'functionality' and 'range_anxiety'.
 
   Returns:
@@ -93,7 +91,7 @@ def run_active_learning_experiment(
 
   for al_i, seed in enumerate(config.seeds):
     print(f'=== Active Learning experiment for seed {al_i+1}/{len(config.seeds)} ===')
-    strategy = initialize_strategy(strategy_type, train_dataset, config, seed, al_class)
+    strategy = initialize_strategy(strategy_type, train_dataset, config, seed)
 
     if first_sample_stratified:
       labeled_data = get_stratified_sample(train_dataset, config, strategy)
