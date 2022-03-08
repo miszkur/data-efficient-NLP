@@ -8,6 +8,7 @@ import os
 import active_learning.visualisation as al_vis
 import pickle
 import data_processing.utils as data_util
+import run_experiment as experiment
 
 from run_experiment import run_active_learning_experiment, Strategy
 from models.bert import BertClassifier
@@ -59,25 +60,8 @@ def main():
       strategies=['RANDOM', 'MAX_ENTROPY', 'CAL'])
   elif args.experiment == 'supervised':
     config = configs.multilabel_base()
-    valid_loader, test_loader = create_dataloader(config, 'valid')
-    results = {'accuracy': [], 'f1_score':[]}
-    for _ in range(5):
-      model = BertClassifier(config=config.bert) 
-      model.to(device)
-      # Train
-      learner = Learner(device, model, config.results_dir)
-      learner.train(config, validation_loader=valid_loader)
-      
-      # Evaluate
-      loss, accuracy, f1_score = learner.evaluate(test_loader)
-      print(f'Test loss: {loss}, accuracy: {accuracy}, f1 score: {f1_score}')
-      results['accuracy'].append(accuracy)
-      results['f1_score'].append(f1_score)
+    experiment.run_supervised_experiment(config, device, classes_to_track=[0,1])
 
-      print('Saving results..')
-      results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
-      with open(results_path, 'wb') as fp:
-        pickle.dump(results, fp)
     # Test
     # save_model_path = os.path.join(config.results_dir, 'bert' + '.pth')
     # model.load_state_dict(torch.load(save_model_path), strict=False)
