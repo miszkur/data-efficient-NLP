@@ -8,54 +8,36 @@ import os
 sns.set_style('darkgrid')
 FIGURES_DIR = 'figures'
 
-def plot_al_results(strategies, config: ml_collections.ConfigDict):
+def plot_al_results(strategies, config: ml_collections.ConfigDict, metrics):
   """Plot accuracy and F1 score of AL experiment
 
   Args:
       config (ml_collections.ConfigDict): configuration dictionary. 
       It should contain path to experiment results and query strategy used in AL.
   """
-  for strategy in strategies:
-    results_path = os.path.join(config.results_dir, f'{strategy}.pkl')
-    
+  for metric in metrics:
+    plt.figure()
+    for strategy in strategies:
+      results_path = os.path.join(config.results_dir, f'{strategy}.pkl')
+      
+      with open(results_path, 'rb') as f:
+        results = pickle.load(f)
+        y = results[metric]
+        # Plot accuracy.
+        sns.lineplot(x=results["split"][-len(y):], y=y, label=strategy)
+        
+        plt.xlabel('Labeled data size')
+        plt.ylabel(metric)
+        plt.title(f'{metric} for different data sizes')
+
+    results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
     with open(results_path, 'rb') as f:
-      results = pickle.load(f)
+      results_supervised = pickle.load(f)
+      if metric in results_supervised:
+        plt.axhline(y = np.mean(results_supervised[metric]), color = 'r', linestyle = '--', label='Full supervision', c='black')
+    plt.legend()
+    plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'{metric}.png'))
 
-      # Plot accuracy.
-      sns.lineplot(data=results, x="split", y="accuracy", label=strategy)
-      plt.legend()
-      plt.xlabel('Labeled data size')
-      plt.ylabel('Accuracy')
-      plt.title('Accuracy for different data sizes')
-      x_axis = results['split']
-
-  results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
-  with open(results_path, 'rb') as f:
-    results_supervised = pickle.load(f)
-    supervised_results_dict = {'split': [], 'accuracy': [], 'f1_score':[]}
-    for split in set(x_axis):
-      for k, v in results_supervised.items():
-        supervised_results_dict[k] += v  
-      supervised_results_dict['split'] += [split for _ in range(len(v))]
-
-    sns.lineplot(data=supervised_results_dict, x='split', y='accuracy', label='Full supervision', color='black')
-  plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'accuracy.png'))
-
-  # Plot F1-score.
-  plt.figure()
-  for strategy in strategies:
-    results_path = os.path.join(config.results_dir, f'{strategy}.pkl')
-    
-    with open(results_path, 'rb') as f:
-      results = pickle.load(f)
-      sns.lineplot(data=results, x="split", y="f1_score", label=strategy)
-      plt.legend()
-      plt.xlabel('Labeled data size')
-      plt.ylabel('F1 score')
-      plt.title('F1 score for different data sizes')
-
-  sns.lineplot(data=supervised_results_dict, x='split', y='f1_score', label='Full supervision', color='black')
-  plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'f1_score.png'))
 
 def cold_vs_warm_start(strategy: str, config):
   results_path = os.path.join(config.results_dir, f'{strategy}.pkl')

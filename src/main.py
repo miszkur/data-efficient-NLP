@@ -45,10 +45,18 @@ def main():
       strategy_type=Strategy[args.al_strategy], 
       al_class=args.al_class, 
       first_sample_stratified=args.al_stratified)
-    # Visualisation
-    # al_vis.cold_vs_warm_start('AVG_ENTROPY', config)
-    # plot_al_results(['RANDOM', 'AVG_ENTROPY', 'MAX_ENTROPY', 'CAL'], config)
-    # al_vis.plot_metrics_for_classes(config, ['f1_score', 'accuracy', 'precision', 'recall'], [0,1], ['RANDOM', 'MAX_ENTROPY'])
+  elif args.experiment == 'al_visualise':
+    config = configs.active_learning_config()
+    plot_al_results(
+      strategies=['RANDOM', 'MAX_ENTROPY', 'CAL'], 
+      config=config, 
+      metrics=['accuracy', 'f1_score', 'train_time', 'sampling_emissions', 'sampling_time'])
+    al_vis.plot_metrics_for_classes(
+      config, 
+      metrics=['f1_score', 'accuracy', 'precision', 'recall'], 
+      classes=[0,1], 
+      class_names=['functionality', 'range_anxiety'],
+      strategies=['RANDOM', 'MAX_ENTROPY', 'CAL'])
   elif args.experiment == 'supervised':
     config = configs.multilabel_base()
     valid_loader, test_loader = create_dataloader(config, 'valid')
