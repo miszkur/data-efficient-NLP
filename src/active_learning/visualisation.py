@@ -15,28 +15,30 @@ def plot_al_results(strategies, config: ml_collections.ConfigDict, metrics):
       config (ml_collections.ConfigDict): configuration dictionary. 
       It should contain path to experiment results and query strategy used in AL.
   """
-  for metric in metrics:
-    plt.figure()
-    for strategy in strategies:
-      results_path = os.path.join(config.results_dir, f'{strategy}.pkl')
-      
-      with open(results_path, 'rb') as f:
-        results = pickle.load(f)
-        y = results[metric]
-        # Plot accuracy.
-        sns.lineplot(x=results["split"][-len(y):], y=y, label=strategy)
-        
-        plt.xlabel('Labeled data size')
-        plt.ylabel(metric)
-        plt.title(f'{metric} for different data sizes')
+  results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
+  with open(results_path, 'rb') as f:
+    results_supervised = pickle.load(f)
 
-    results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
-    with open(results_path, 'rb') as f:
-      results_supervised = pickle.load(f)
-      if metric in results_supervised:
-        plt.axhline(y = np.mean(results_supervised[metric]), color = 'r', linestyle = '--', label='Full supervision', c='black')
-    plt.legend()
-    plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'{metric}.png'))
+    for metric in metrics:
+      plt.figure()
+      for strategy in strategies:
+        results_path = os.path.join(config.results_dir, f'{strategy}.pkl')
+        
+        with open(results_path, 'rb') as f:
+          results = pickle.load(f)
+          y = results[metric]
+          # Plot accuracy.
+          sns.lineplot(x=results["split"][-len(y):], y=y, label=strategy)
+          
+          plt.xlabel('Labeled data size')
+          plt.ylabel(metric)
+          plt.title(f'{metric} for different data sizes')
+
+      
+        if metric in results_supervised:
+          plt.axhline(y = np.mean(results_supervised[metric]), color = 'r', linestyle = '--', label='Full supervision', c='black')
+      plt.legend()
+      plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'{metric}.png'))
 
 
 def cold_vs_warm_start(strategy: str, config):
@@ -69,18 +71,27 @@ def cold_vs_warm_start(strategy: str, config):
       plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'{strategy}_f1_score.png'))
 
 def plot_metrics_for_classes(config, metrics, classes, strategies, class_names, savedir='class_results'):
-  for class_index in classes:
-    for metric in metrics:
-      plt.figure()
-      for strategy in strategies:
-        results_path = os.path.join('../results/al', f'{strategy}.pkl')
-        
-        with open(results_path, 'rb') as f:
-          results = pickle.load(f)
+  results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
+  with open(results_path, 'rb') as f:
+    results_supervised = pickle.load(f)
+    for class_index in classes:
+      for metric in metrics:
+        plt.figure()
+        for strategy in strategies:
+          results_path = os.path.join('../results/al', f'{strategy}.pkl')
+          
+          with open(results_path, 'rb') as f:
+            results = pickle.load(f)
 
-          sns.lineplot(x=results['split'], y=results[class_index][metric], label=strategy)
-          plt.legend()
-          plt.xlabel('Labeled data size')
-          plt.ylabel(metric)
-          plt.title(f'{metric} for different data sizes for {class_names[class_index]} class')
-      plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, savedir, f'{metric}_class{class_index}.png'))
+            sns.lineplot(x=results['split'], y=results[class_index][metric], label=strategy)
+            plt.legend()
+            plt.xlabel('Labeled data size')
+            plt.ylabel(metric)
+            plt.title(f'{metric} for different data sizes for {class_names[class_index]} class')
+      
+        if class_index in results_supervised and metric in results_supervised[class_index]:
+          plt.axhline(
+            y = np.mean(results_supervised[class_index][metric]), 
+            color = 'r', linestyle = '--', label='Full supervision', c='black')
+      
+        plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, savedir, f'{metric}_class{class_index}.png'))
