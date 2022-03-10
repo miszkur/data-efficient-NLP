@@ -160,6 +160,7 @@ def run_supervised_experiment(
   results = initialize_results_dict(classes_to_track)
   del results['split']
   del results['sampling_emissions']
+  del results['sampling_time']
   del results['al_iteration_time']
   results['training_emissions'] = []
 
@@ -175,7 +176,7 @@ def run_supervised_experiment(
     learner.train(config, validation_loader=valid_loader)
 
     results['train_time'].append(time.time() - train_start_time)
-    results['sampling_emissions'].append(tracker.stop())
+    results['training_emissions'].append(tracker.stop())
     
     # Evaluate
     metrics = learner.evaluate(test_loader, classes=classes_to_track)
