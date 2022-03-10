@@ -26,8 +26,6 @@ def main():
                       help='Experiment name')
   parser.add_argument('--al_strategy', type=str,
                       help='AL strategy to use e.g. RANDOM, MAX_ENTROPY, AVG_ENTROPY')
-  parser.add_argument('--al_class', type=int, default=None,
-                      help='Class which will guide AL.')
   parser.add_argument('--al_stratified', action='store_true',
                       help='Initial data batch will be created with stratified sampling.')
 
@@ -44,7 +42,6 @@ def main():
       config, 
       device=device,
       strategy_type=Strategy[args.al_strategy], 
-      al_class=args.al_class, 
       first_sample_stratified=args.al_stratified)
   elif args.experiment == 'al_visualise':
     config = configs.active_learning_config()
