@@ -57,8 +57,8 @@ class EntropyStrategy(QueryStrategy):
 
   def max_entropy(self, probabilities):
     p = probabilities
-    entropy = -(p*np.log(p)+(1-p)*np.log(1-p))
-    return np.max(entropy, axis=1)
+    entropy = -(p*torch.log(p)+(1-p)*torch.log(1-p))
+    return torch.max(entropy, axis=1).values
 
   def choose_samples_to_label(self, learner, train_loader=None):
     # Take random sample for the first iteration.
@@ -81,11 +81,11 @@ class EntropyStrategy(QueryStrategy):
     with torch.no_grad():
       for batch in tqdm(data_loader):
         output = learner.inference(batch) # batch_size x num_classes
-        p = torch.sigmoid(output).cpu().detach().numpy()
+        p = torch.sigmoid(output)
         entropies.append(self.compute_entropy(p))
 
     # Get the data to label based on entropy values.  
-    entropies = np.concatenate(entropies)
+    entropies = torch.cat(entropies).cpu().numpy()
 
     partitioned_indices = np.argpartition(entropies, -self.sample_size)
     indices_to_label = partitioned_indices[-self.sample_size:]
