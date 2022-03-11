@@ -35,8 +35,14 @@ def plot_al_results(strategies, config: ml_collections.ConfigDict, metrics):
           plt.title(f'{metric} for different data sizes')
 
       
-        if metric in results_supervised:
-          plt.axhline(y = np.mean(results_supervised[metric]), color = 'r', linestyle = '--', label='Full supervision', c='black')
+      if metric in results_supervised:
+        mean = np.mean(results_supervised[metric])
+        std = np.std(results_supervised[metric])
+        plt.axhline(
+          y = mean, 
+          linestyle = '--', label='Full supervision', c='black')
+        plt.axhspan(ymin=mean-std, ymax=mean+std,color='black', alpha=0.1)
+
       plt.legend()
       plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'{metric}.png'))
 
@@ -70,7 +76,9 @@ def cold_vs_warm_start(strategy: str, config):
       plt.title('F1 score for different data sizes')
       plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'{strategy}_f1_score.png'))
 
-def plot_metrics_for_classes(config, metrics, classes, strategies, class_names, savedir='class_results'):
+def plot_metrics_for_classes(
+  config, metrics, classes, strategies, class_names, 
+  savedir='class_results', supervised_baseline=True):
   results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
   with open(results_path, 'rb') as f:
     results_supervised = pickle.load(f)
@@ -88,7 +96,9 @@ def plot_metrics_for_classes(config, metrics, classes, strategies, class_names, 
             plt.ylabel(metric)
             plt.title(f'{metric} for different data sizes for {class_names[class_index]} class')
       
-        if class_index in results_supervised and metric in results_supervised[class_index]:
+        if supervised_baseline and \
+         class_index in results_supervised and \
+         metric in results_supervised[class_index]:
           mean = np.mean(results_supervised[class_index][metric])
           std = np.std(results_supervised[class_index][metric])
           plt.axhline(
