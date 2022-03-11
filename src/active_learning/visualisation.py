@@ -82,16 +82,18 @@ def plot_metrics_for_classes(config, metrics, classes, strategies, class_names, 
           
           with open(results_path, 'rb') as f:
             results = pickle.load(f)
-
+            
             sns.lineplot(x=results['split'], y=results[class_index][metric], label=strategy)
-            plt.legend()
             plt.xlabel('Labeled data size')
             plt.ylabel(metric)
             plt.title(f'{metric} for different data sizes for {class_names[class_index]} class')
       
         if class_index in results_supervised and metric in results_supervised[class_index]:
+          mean = np.mean(results_supervised[class_index][metric])
+          std = np.std(results_supervised[class_index][metric])
           plt.axhline(
-            y = np.mean(results_supervised[class_index][metric]), 
-            color = 'r', linestyle = '--', label='Full supervision', c='black')
-      
+            y = mean, 
+            linestyle = '--', label='Full supervision', c='black')
+          plt.axhspan(ymin=mean-std, ymax=mean+std,color='black', alpha=0.1)
+        plt.legend()
         plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, savedir, f'{metric}_class{class_index}.png'))
