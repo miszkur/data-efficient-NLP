@@ -4,18 +4,11 @@ load_dotenv()
 import argparse
 import config.config as configs
 import torch
-import os
 import active_learning.visualisation as al_vis
-import pickle
-import data_processing.utils as data_util
 import run_experiment as experiment
 
 from run_experiment import run_active_learning_experiment, Strategy
-from models.bert import BertClassifier
-from learner import Learner
-from evaluate import print_evaluation_report
 from active_learning.visualisation import plot_al_results
-from data_processing.ev_parser import create_dataloader
 
 
 def main():
