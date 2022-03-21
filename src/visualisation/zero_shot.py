@@ -14,12 +14,13 @@ def visualise_per_class_performance(
   results_path = os.path.join(config.results_dir, filename)
   with open(results_path, 'rb') as f:
     results = pickle.load(f)
+    print(results)
     labels = config.class_names
-    fig, axes = plt.subplots(3,1, figsize=(6, 9))
+    fig, axes = plt.subplots(3,1, figsize=(6, 10))
     for metric, ax in zip(metrics, axes.flatten()):
       metric_results = []
       for label in labels:
-        label = label.replace(' ', '_') # range anxiety => range_anxiety.
+        # label = label.replace(' ', '_') # range anxiety => range_anxiety.
         metric_results.append(results[label][metric])
 
       # plt.figure()

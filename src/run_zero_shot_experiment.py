@@ -15,6 +15,7 @@ def run_zero_shot_experiment(config: ml_collections.ConfigDict):
   config.batch_size = 8
   (_, test_loader), class_names = create_dataloader(config, return_target_names=True, split='valid')
   class_name_to_idx = {}
+  
   for i, class_name in enumerate(config.class_names):
     class_name_to_idx[class_name] = i
 
@@ -38,10 +39,10 @@ def run_zero_shot_experiment(config: ml_collections.ConfigDict):
 
   y_true = np.concatenate(y_true)
   y_pred = np.concatenate(y_preds) 
-  results = classification_report(y_true, y_pred, target_names=class_names, zero_division=0, output_dict=True)
+  results = classification_report(y_true, y_pred, target_names=config.class_names, zero_division=0, output_dict=True)
   correctly_classified = (y_pred == y_true)
   acc = correctly_classified.sum(axis=0) / y_pred.shape[0]
-  for i, name in enumerate(class_names):
+  for i, name in enumerate(config.class_names):
     results[name]['accuracy'] = acc[i]
 
   print('Saving results..')
