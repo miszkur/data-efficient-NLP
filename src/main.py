@@ -29,12 +29,11 @@ def main():
   args = parser.parse_args()
 
   if args.experiment == 'zero-shot':
-
     config = configs.zero_shot_config()
-
     if args.visualise:
       zs_vis.visualise_per_class_performance(config)
     else:
+      run_zero_shot_experiment(config)
 
   elif args.experiment == 'al':
     config = configs.active_learning_config()

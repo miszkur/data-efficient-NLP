@@ -15,7 +15,6 @@ def visualise_per_class_performance(
   with open(results_path, 'rb') as f:
     results = pickle.load(f)
     labels = config.class_names
-    print(labels)
     fig, axes = plt.subplots(3,1, figsize=(6, 9))
     for metric, ax in zip(metrics, axes.flatten()):
       metric_results = []
