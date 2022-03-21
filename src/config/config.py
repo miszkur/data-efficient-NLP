@@ -39,3 +39,10 @@ def active_learning_config():
   config.query_strategy = 'random'
   return config
 
+
+def zero_shot_config():
+  config = multilabel_base()
+  config.bart = 'facebook/bart-large-mnli'
+  config.class_names = ['functionality', 'range anxiety', 'availability', 'cost', 'ui', 'location', 'service time', 'dealership']
+  config.results_dir = os.path.join('..', 'results', 'zero-shot')
+  return config
