@@ -9,13 +9,19 @@ FIGURES_DIR = 'figures'
 def visualise_per_class_performance(
   config, 
   metrics=['precision', 'recall', 'accuracy'],
-  filename='valid_results.pkl'):
+  filename='valid_results'):
   sns.set_palette(sns.color_palette("Set2"))
-  results_path = os.path.join(config.results_dir, filename)
+  results_path = os.path.join(config.results_dir, f'{filename}.pkl')
   with open(results_path, 'rb') as f:
     results = pickle.load(f)
-    print(results)
-    labels = config.class_names
+    # print(results)
+    print(filename)
+    if 'neighbors' in filename:
+      # Zero shot for semantic neighbors
+      labels = list(results.keys())[:10]
+      print(labels)
+    else:
+      labels = config.class_names
     fig, axes = plt.subplots(3,1, figsize=(6, 10))
     for metric, ax in zip(metrics, axes.flatten()):
       metric_results = []
@@ -48,4 +54,4 @@ def visualise_per_class_performance(
     ax.set_xticklabels(labels)
     ax.tick_params(axis='x', rotation=90)
     plt.suptitle('Zero-shot results')
-    plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'all_metrics.png'))
+    plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'all_metrics_{filename}.png'))
