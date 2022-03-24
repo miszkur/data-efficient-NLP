@@ -29,7 +29,22 @@ def visualise_per_class_performance(
       ax = sns.barplot(x=labels, y=metric_results, ax=ax)
       ax.set_xticklabels([])
       ax.set_ylim([0,1])
+
+    clicks_no_preannotation = 0
+    clicks_preannotation = 0
+    print('\nPreannotation vs no preannotation:')
+    for label in labels:
+      print(label)
+      # 533 is the data size.
+      print('FP+FN: ', 533 - results[label]['accuracy']*533, 'positive samples: ',results[label]['support'])
+      clicks_no_preannotation += results[label]['support']
+      clicks_preannotation += 533 - results[label]['accuracy']*533
+
+    print('\nSum of clicks')
+    print(f'No preannotation clicks: {clicks_no_preannotation}')
+    print(f'With preannotation clicks: {clicks_preannotation}')
+
     ax.set_xticklabels(labels)
-    ax.tick_params(axis='x', rotation=50)
+    ax.tick_params(axis='x', rotation=90)
     plt.suptitle('Zero-shot results')
     plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'all_metrics.png'))

@@ -1,5 +1,5 @@
 from models.bart import BartEntailment
-from data_processing.ev_parser import create_dataloader
+from data_processing.ev_parser import create_dataloader, create_dataset
 from sklearn.metrics import classification_report
 from tqdm import tqdm
 
@@ -10,7 +10,6 @@ import os
 
 
 def run_zero_shot_experiment(config: ml_collections.ConfigDict):
-
   model = BartEntailment(config)
   config.batch_size = 8
   (_, test_loader), class_names = create_dataloader(config, return_target_names=True, split='valid')
@@ -44,9 +43,18 @@ def run_zero_shot_experiment(config: ml_collections.ConfigDict):
   acc = correctly_classified.sum(axis=0) / y_pred.shape[0]
   for i, name in enumerate(config.class_names):
     results[name]['accuracy'] = acc[i]
+    results[name]['num_positive_predictions'] = np.sum(y_pred[:,i])
 
   print('Saving results..')
   results_path = os.path.join(config.results_dir, f'test_results.pkl')
   with open(results_path, 'wb') as fp:
     pickle.dump(results, fp)
 
+
+def zero_shot_semantic_neighbors(config):
+  glove_vectors = gensim.downloader.load('glove-wiki-gigaword-50')  
+  print(glove_vectors.most_similar('location'))
+
+  for i, class_name in enumerate(config.class_names):
+    
+    class_name_to_idx[class_name] = i

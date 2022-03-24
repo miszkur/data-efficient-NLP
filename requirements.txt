@@ -9,3 +9,4 @@ seaborn
 typing
 scikit-multilearn
 codecarbon
+gensim
