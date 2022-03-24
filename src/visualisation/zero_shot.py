@@ -32,17 +32,18 @@ def visualise_per_class_performance(
 
     clicks_no_preannotation = 0
     clicks_preannotation = 0
-    print('\nPreannotation vs no preannotation:')
-    for label in labels:
-      print(label)
-      # 533 is the data size.
-      print('FP+FN: ', 533 - results[label]['accuracy']*533, 'positive samples: ',results[label]['support'])
-      clicks_no_preannotation += results[label]['support']
-      clicks_preannotation += 533 - results[label]['accuracy']*533
+    print('\nclass name & clicks pre-annotation & clicks without preannotation \\ \hline')
 
-    print('\nSum of clicks')
-    print(f'No preannotation clicks: {clicks_no_preannotation}')
-    print(f'With preannotation clicks: {clicks_preannotation}')
+    for label in labels:
+      # 533 is the data size.
+      new_clicks_preannotation = 533 - results[label]['accuracy']*533
+      new_clicks_no_preannotation = results[label]['support']
+      print(f'{label} & {new_clicks_preannotation} & {new_clicks_no_preannotation} \\')
+      clicks_no_preannotation += new_clicks_no_preannotation
+      clicks_preannotation += new_clicks_preannotation
+
+    print('\hline\hline')
+    print(f'Sum & {clicks_preannotation} & {clicks_no_preannotation}')
 
     ax.set_xticklabels(labels)
     ax.tick_params(axis='x', rotation=90)
