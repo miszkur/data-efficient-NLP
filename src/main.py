@@ -9,7 +9,7 @@ import visualisation.zero_shot as zs_vis
 import run_al_experiment as experiment
 
 from run_al_experiment import run_active_learning_experiment, Strategy
-from run_zero_shot_experiment import run_zero_shot_experiment
+from run_zero_shot_experiment import run_zero_shot_experiment, run_zero_shot_for_semantic_neighbors
 from active_learning.visualisation import plot_al_results
 
 
@@ -25,6 +25,8 @@ def main():
                       help='Initial data batch will be created with stratified sampling.')
   parser.add_argument('--visualise', action='store_true',
                       help='Visualise results of the experiment.')
+  parser.add_argument('--zs_var', action='store_true',
+                      help='Do zero shot for semantic neighbors to check variability.')
 
   args = parser.parse_args()
 
@@ -32,8 +34,10 @@ def main():
     config = configs.zero_shot_config()
     if args.visualise:
       zs_vis.visualise_per_class_performance(config)
+    elif args.zs_var:
+      run_zero_shot_for_semantic_neighbors(config)
     else:
-      run_zero_shot_experiment(config)
+      run_zero_shot_experiment(config, config.class_names)
 
   elif args.experiment == 'al':
     config = configs.active_learning_config()
