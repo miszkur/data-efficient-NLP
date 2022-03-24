@@ -32,10 +32,18 @@ def main():
 
   if args.experiment == 'zero-shot':
     config = configs.zero_shot_config()
-    if args.visualise:
+
+    if args.zs_var:
+      if args.visualise:
+        # Visualise semantic neighbors experiment.
+        for class_name in config.class_names:
+          if ' ' in class_name or 'ui' in class_name:
+            continue
+          zs_vis.visualise_per_class_performance(config, filename=f'{class_name}_neighbors')
+      else:
+        run_zero_shot_for_semantic_neighbors(config)
+    elif args.visualise:
       zs_vis.visualise_per_class_performance(config)
-    elif args.zs_var:
-      run_zero_shot_for_semantic_neighbors(config)
     else:
       run_zero_shot_experiment(config, config.class_names)
 
