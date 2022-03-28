@@ -7,7 +7,7 @@ class BartEntailment():
   def __init__(self, config):
     self.candidate_labels = config.class_names
     self.classifier = pipeline("zero-shot-classification",
-                      model="facebook/bart-large-mnli")
+                      model=config.bart)
 
 
   def predict(self, premise):
