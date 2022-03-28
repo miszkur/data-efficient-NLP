@@ -8,7 +8,7 @@ FIGURES_DIR = 'figures'
 
 def visualise_per_class_performance(
   config, 
-  metrics=['precision', 'recall', 'accuracy'],
+  metrics=['f1-score', 'accuracy'],
   filename='valid_results'):
   sns.set_palette(sns.color_palette("Set2"))
   results_path = os.path.join(config.results_dir, f'{filename}.pkl')
@@ -22,7 +22,7 @@ def visualise_per_class_performance(
       print(labels)
     else:
       labels = config.class_names
-    fig, axes = plt.subplots(3,1, figsize=(6, 10))
+    fig, axes = plt.subplots(len(metrics),1, figsize=(6, 9))
     for metric, ax in zip(metrics, axes.flatten()):
       metric_results = []
       for label in labels:
@@ -52,6 +52,6 @@ def visualise_per_class_performance(
     print(f'sum & {clicks_preannotation} & {clicks_no_preannotation}')
 
     ax.set_xticklabels(labels)
-    ax.tick_params(axis='x', rotation=90)
+    ax.tick_params(axis='x', rotation=60)
     plt.suptitle('Zero-shot results')
     plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'all_metrics_{filename}.png'))
