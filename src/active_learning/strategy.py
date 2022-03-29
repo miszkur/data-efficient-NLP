@@ -101,6 +101,7 @@ class CALStrategy(QueryStrategy):
   def __init__(self, dataset, sample_size=48, batch_size=8, seed=42):
     super().__init__(dataset, sample_size, batch_size, seed)
     self.num_neighbors = 10 # default value used in CAL repo
+    self.use_true_labels = False # True for ablation experiment.
 
   def process_labeled_data(self, learner, train_loader):
     learner.model.eval()
@@ -143,24 +144,34 @@ class CALStrategy(QueryStrategy):
       batch_size=unlab_batch_size,
       shuffle=False)
 
-    kl_scores = []
+    divergence_scores = []
     learner.model.eval()
     with torch.no_grad():
       for batch in tqdm(data_loader, desc="Finding neighbours for every unlabeled data point"):
         unlab_logits, unlab_embeddings = learner.inference(batch, return_cls=True) # batch_size x num_classes
         neighbour_indices = neigh.kneighbors(X=unlab_embeddings.cpu().numpy(),
         return_distance=False)
+
         batch_size = neighbour_indices.shape[0]
-        neigh_labels = torch.reshape(
+
+        if self.use_true_labels:
+          # Ablation - use ground truth labels.
+          neigh_labels = torch.reshape(
           train_labels[neighbour_indices.flatten()], 
           (batch_size, self.num_neighbors, num_classes)) 
+        else:
+          # "Original" CAL method - use model predicitons.
+          neigh_logits = torch.reshape(
+            train_logits[neighbour_indices.flatten()], 
+            (batch_size, self.num_neighbors, num_classes))
+          neigh_labels = torch.round(torch.sigmoid(neigh_logits))
 
         for i, label in enumerate(neigh_labels):
           x = unlab_logits[i].repeat(self.num_neighbors, 1)
-          kl = criterion(x.cpu(), label)
-          kl_scores.append(kl)
+          divergence = criterion(x, label)
+          divergence_scores.append(divergence.cpu())
         
-    partitioned_indices = np.argpartition(kl_scores, -self.sample_size)
+    partitioned_indices = np.argpartition(divergence_scores, -self.sample_size)
     indices_to_label = partitioned_indices[-self.sample_size:]
     unlabeled_data_indices = partitioned_indices[:-self.sample_size]
     data_to_label = torch.utils.data.Subset(self.dataset, indices_to_label)
