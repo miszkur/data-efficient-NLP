@@ -10,3 +10,4 @@ typing
 scikit-multilearn
 codecarbon
 gensim
+nlpaug
