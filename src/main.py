@@ -30,20 +30,6 @@ def main():
 
   args = parser.parse_args()
 
-  import nlpaug.augmenter.word as naw
-  from data_processing.ev_parser import create_dataset, create_dataloader
-  from tqdm import tqdm
-  config = configs.multilabel_base()
-  aug = naw.BackTranslationAug()
-  train_loader = create_dataloader(config)
-  for x in tqdm(train_loader):
-    print(x['review_text'])
-    augmented_data = aug.augment(x['review_text'])
-    print(augmented_data)
-    break
-
-  return
-
   if args.experiment == 'zero-shot':
     config = configs.zero_shot_config()
 
