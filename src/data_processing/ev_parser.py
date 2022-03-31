@@ -69,7 +69,8 @@ def create_dataset(split='train') -> Dataset:
 def create_dataloader(
   config: ConfigDict, 
   split='train', 
-  return_target_names=False) -> DataLoader:
+  return_target_names=False,
+  is_training=None) -> DataLoader:
   """Load dataset and wrap it in DataLoader.
 
   Args:
@@ -85,7 +86,8 @@ def create_dataloader(
   """
   
   assert split in ['train', 'test', 'valid']
-  is_training = (split == 'train')
+  if is_training is None:
+    is_training = (split == 'train')
 
   df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
   
