@@ -1,5 +1,5 @@
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 import argparse
 import config.config as configs
@@ -65,7 +65,7 @@ def main():
     config = configs.active_learning_config()
 
     if args.visualise:
-      strategies = ['RANDOM', 'MAX_ENTROPY', 'CAL']
+      strategies = ['CAL_true_labels', 'CAL']
       plot_al_results(
         strategies=strategies, 
         config=config, 
