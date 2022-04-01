@@ -74,7 +74,6 @@ def main():
     df = pd.read_csv(results_path)
 
     translation_redundant_frac = len(df[df.original == df.augmented]) / len(df)
-    print(f'{100*translation_redundant_frac:.2f}%')
-    print(df.original.duplicated().sum())
+    print(f'Redundant translations: {100*translation_redundant_frac:.2f}%')
 
 main()
