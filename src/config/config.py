@@ -44,9 +44,11 @@ def zero_shot_config():
   config = multilabel_base()
   config.bart = 'facebook/bart-large-mnli'
   config.class_names = ['functionality', 'range anxiety', 'availability', 'cost', 'ui', 'location', 'service time', 'dealership']
-  # modify class names: 
-  # config.class_names = ['functionality', 'trip', 'availability', 'payment', 'user interactions', 'location', 'charging time', 'dealership']
-  # config.class_names = [
-  #   'functionality', 'range', 'number of stations available', 'parking charging', 'user interactions', 'general location', 'charging rate', '	dealership charging experience']
   config.results_dir = os.path.join('..', 'results', 'zero-shot')
   return config
+
+def backtranslation_config():
+  config = multilabel_base()
+  config.results_path = os.path.join('..', 'results', 'backtranslation', 'augmented.csv')
+  return config
+  
