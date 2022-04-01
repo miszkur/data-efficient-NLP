@@ -60,7 +60,7 @@ def create_dataset(split='train') -> Dataset:
   Returns:
       Dataset: EV dataset.
   """
-  assert split in ['train', 'test', 'valid']
+  assert split in ['train', 'test', 'valid', 'augmented']
 
   df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
   tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
