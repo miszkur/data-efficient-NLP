@@ -18,27 +18,43 @@ def run_backtranslation(config):
   results_path = config.results_path
   aug = naw.BackTranslationAug()
 
-  train_loader = create_dataloader(config, is_training=False)
+  first_path = os.path.join('..', 'results', 'backtranslation', 'first.csv')
+  df_first = pd.read_csv(first_path)
+
+  train_df = pd.read_csv(os.path.join('..', 'data', 'train_final.csv'))
+  save_every_n = 10
   results = []
-  index = 0
-  for batch in tqdm(train_loader):
-    labels = batch['label'].numpy()
-    for text_id, text in enumerate(tqdm(batch['review_text'])):
-      line = {
-        'id': index,
-        'original': text,
-        'augmented': aug.augment(text)
-      }
+  for review in tqdm(train_df.itertuples(), total=train_df.shape[0]):
+    review_text = review.review
+    
+    if (df_first.original == review_text).any():
+      # print(df_first[df_first.original == review_text].iloc[0].augmented)
+      augmented_text = df_first[df_first.original == review_text].iloc[0].augmented
+    else:
+      augmented_text = aug.augment(review_text)
 
-      for i, y_true in enumerate(labels[text_id]):
-        line[CLASS_NAMES[i]] = int(y_true)
-      results.append(line)
-      index += 1
+    index = review.Index
+    line = {
+      'id': index,
+      'original': review_text,
+      'augmented': augmented_text,
+      'functionality': review.functionality,
+      'range_anxiety': review.range_anxiety,
+      'availability': review.availability,
+      'cost': review.cost,
+      'ui': review.ui,
+      'location': review.location,
+      'service_time': review.service_time,
+      'dealership': review.dealership
+    }
+    results.append(line)
 
-    with open(results_path, 'w') as f: 
-      w = csv.DictWriter(f, line.keys())
-      w.writeheader()
-      w.writerows(results)
+    if index % save_every_n == 0:
+      with open(results_path, 'a') as f: 
+        w = csv.DictWriter(f, line.keys())
+        # w.writeheader()
+        w.writerows(results)
+        results = []
 
 def main():
   parser = argparse.ArgumentParser(description='Process some integers.')
