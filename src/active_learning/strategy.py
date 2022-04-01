@@ -2,7 +2,8 @@ import torch
 import numpy as np
 
 from sklearn.neighbors import KNeighborsClassifier
-from torch.utils.data import DataLoader, random_split
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader, random_split, Subset
 from abc import abstractmethod
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import cdist
@@ -22,7 +23,9 @@ class QueryStrategy:
     self.sample_size = sample_size
     self.dataset = dataset
     self.generator = torch.Generator().manual_seed(seed)
+    self.seed = seed
     self.batch_size = batch_size
+    self.unlabeled_indexes = np.arange(start=0, stop=len(dataset))
 
   @abstractmethod
   def choose_samples_to_label(self, learner, train_loader=None):
@@ -34,12 +37,10 @@ class RandomStrategy(QueryStrategy):
     super().__init__(dataset, sample_size, batch_size, seed)
 
   def choose_samples_to_label(self, learner, train_loader=None):
-    data_to_label, unlabeled_data = random_split(
-      self.dataset, 
-      [self.sample_size, len(self.dataset)-self.sample_size], 
-      generator=self.generator)
-    self.dataset = unlabeled_data
-    return data_to_label
+    unlabeled_indexes, to_label_indexes = train_test_split(
+      self.unlabeled_indexes, test_size=self.sample_size, random_state=self.seed)
+    self.unlabeled_indexes = unlabeled_indexes
+    return torch.utils.data.Subset(self.dataset, to_label_indexes)
 
 class EntropyStrategy(QueryStrategy):
   """Chooses samples to label which have the maximum value of normalized entropy."""
@@ -63,16 +64,14 @@ class EntropyStrategy(QueryStrategy):
   def choose_samples_to_label(self, learner, train_loader=None):
     # Take random sample for the first iteration.
     if train_loader == None:
-      data_to_label, unlabeled_data = random_split(
-        self.dataset, 
-        [self.sample_size, len(self.dataset)-self.sample_size], 
-        generator=self.generator
-      )
-      self.dataset = unlabeled_data
-      return data_to_label
+      unlabeled_indexes, to_label_indexes = train_test_split(
+        self.unlabeled_indexes, test_size=self.sample_size, random_state=self.seed)
+      self.unlabeled_indexes = unlabeled_indexes
+      return Subset(self.dataset, to_label_indexes)
 
+    unlabeled_dataset = Subset(self.dataset, self.unlabeled_indexes)
     data_loader = DataLoader(
-      self.dataset, 
+      unlabeled_dataset, 
       batch_size=32,
       shuffle=False)
 
@@ -88,12 +87,11 @@ class EntropyStrategy(QueryStrategy):
     entropies = torch.cat(entropies).cpu().numpy()
 
     partitioned_indices = np.argpartition(entropies, -self.sample_size)
-    indices_to_label = partitioned_indices[-self.sample_size:]
-    unlabeled_data_indices = partitioned_indices[:-self.sample_size]
-    data_to_label = torch.utils.data.Subset(self.dataset, indices_to_label)
-    self.dataset = torch.utils.data.Subset(self.dataset, unlabeled_data_indices)
+    new_indices_to_label = partitioned_indices[-self.sample_size:]
+    to_label_indexes = self.unlabeled_indexes[new_indices_to_label]
+    self.unlabeled_indexes = np.delete(self.unlabeled_indexes, new_indices_to_label)
 
-    return data_to_label
+    return torch.utils.data.Subset(self.dataset, to_label_indexes)
 
 
 class CALStrategy(QueryStrategy):
@@ -124,13 +122,10 @@ class CALStrategy(QueryStrategy):
   def choose_samples_to_label(self, learner, train_loader=None):
     # Take random sample for the first iteration.
     if train_loader == None:
-      data_to_label, unlabeled_data = random_split(
-        self.dataset, 
-        [self.sample_size, len(self.dataset)-self.sample_size], 
-        generator=self.generator
-      )
-      self.dataset = unlabeled_data
-      return data_to_label
+      unlabeled_indexes, to_label_indexes = train_test_split(
+        self.unlabeled_indexes, test_size=self.sample_size, random_state=self.seed)
+      self.unlabeled_indexes = unlabeled_indexes
+      return Subset(self.dataset, to_label_indexes)
     
     train_embeddings, train_logits, train_labels = self.process_labeled_data(learner, train_loader)
     neigh = KNeighborsClassifier(n_neighbors=self.num_neighbors) 
@@ -138,9 +133,10 @@ class CALStrategy(QueryStrategy):
     criterion = nn.BCEWithLogitsLoss()
     num_classes = train_labels.shape[1]
 
+    unlabeled_dataset = Subset(self.dataset, self.unlabeled_indexes)
     unlab_batch_size = 128
     data_loader = DataLoader(
-      self.dataset, 
+      unlabeled_dataset, 
       batch_size=unlab_batch_size,
       shuffle=False)
 
@@ -172,8 +168,9 @@ class CALStrategy(QueryStrategy):
           divergence_scores.append(divergence.cpu())
         
     partitioned_indices = np.argpartition(divergence_scores, -self.sample_size)
-    indices_to_label = partitioned_indices[-self.sample_size:]
-    unlabeled_data_indices = partitioned_indices[:-self.sample_size]
-    data_to_label = torch.utils.data.Subset(self.dataset, indices_to_label)
-    self.dataset = torch.utils.data.Subset(self.dataset, unlabeled_data_indices)
+    new_indices_to_label = partitioned_indices[-self.sample_size:]
+    to_label_indexes = self.unlabeled_indexes[new_indices_to_label]
+    self.unlabeled_indexes = np.delete(self.unlabeled_indexes, new_indices_to_label)
+
+    data_to_label = torch.utils.data.Subset(self.dataset, to_label_indexes)
     return data_to_label
