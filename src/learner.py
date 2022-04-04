@@ -146,7 +146,8 @@ class Learner:
     report = classification_report(
       y_true, y_pred, output_dict=True, zero_division=0)
     correctly_classified = (y_pred == y_true)
-    incorrectly_classified = (y_pred != y_true).sum(axis=0)
+    incorrectly_classified = (y_pred != y_true)
+    incorrectly_classified = incorrectly_classified.sum(axis=0)
     acc = correctly_classified.sum(axis=0) / y_pred.shape[0]
     per_class_results = {}
     for c in classes:
@@ -155,7 +156,7 @@ class Learner:
         'accuracy': acc[c],
         'precision': report[f'{c}']['precision'], 
         'recall': report[f'{c}']['recall'],
-        'incorrect_predictions': incorrectly_classified
+        'incorrect_predictions': incorrectly_classified[c]
       }
   
     # False positive + false negative
@@ -167,7 +168,6 @@ class Learner:
       'accuracy': acc_accuracy, 
       'f1_score': acc_f1_score, 
       'classes': per_class_results,
-      'fp_fn': fp_fn
     }
     
 

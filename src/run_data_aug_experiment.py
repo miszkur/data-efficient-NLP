@@ -19,12 +19,11 @@ def initialize_results_dict(classes_to_track):
     'accuracy': [], 
     'f1_score':[], 
     'train_time': [], 
-    'training_emissions': [], 
-    'fp_fn': []
+    'training_emissions': []
   }
   for class_index in classes_to_track:
     results[class_index] = {
-      'accuracy': [], 'f1_score':[], 'recall': [], 'precision':[]}
+      'accuracy': [], 'f1_score':[], 'recall': [], 'precision':[], 'incorrect_predictions':[]}
   return results
 
 def train_all_data(
@@ -69,7 +68,6 @@ def train_all_data(
     print(f'Test loss: {loss}, accuracy: {accuracy}, f1 score: {f1_score}')
     results['accuracy'].append(accuracy)
     results['f1_score'].append(f1_score)
-    results['fp_fn'].append(metrics['fp_fn'])
     for class_index in classes_to_track:
       for metric_name, value in metrics['classes'][class_index].items():
         if metric_name in list(results[class_index].keys()):
@@ -91,9 +89,6 @@ def train_limited_data(
 
   valid_loader, test_loader = create_dataloader(config, 'valid')
   results = initialize_results_dict(classes_to_track)
-
-  # train_dataset = create_dataset()
-  # augmented_dataset = create_dataset(split='augmented')
 
   train_data_path = os.path.join(config.data_dir, 'train_final.csv')
   aug_data_path = os.path.join(config.data_dir, 'augmented_final.csv')
