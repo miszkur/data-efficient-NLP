@@ -26,6 +26,7 @@ class Learner:
     if results_dir is not None:
       self.save_model_path = os.path.join(results_dir, 'bert' + '.pth')
     self.results_dir = results_dir
+    self.num_classes = num_classes
 
   def train(self, config, train_loader=None, validation_loader=None):
     num_epochs = config.num_epochs
@@ -155,11 +156,16 @@ class Learner:
         'recall': report[f'{c}']['recall']
       }
   
+    # False positive + false negative
+    num_predictions = len(y_true) * self.num_classes
+    fp_fn = num_predictions - acc_accuracy * num_predictions
+
     return {
       'loss': acc_loss,
       'accuracy': acc_accuracy, 
       'f1_score': acc_f1_score, 
-      'classes': per_class_results
+      'classes': per_class_results,
+      'fp_fn': fp_fn
     }
     
 
