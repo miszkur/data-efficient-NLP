@@ -15,7 +15,7 @@ CLASS_NAMES = ['functionality','range_anxiety','availability','cost','ui','locat
 
 
 def run_backtranslation(config):
-  results_path = config.results_path
+  results_path = config.results_dir
   aug = naw.BackTranslationAug()
 
   first_path = os.path.join('..', 'results', 'backtranslation', 'first.csv')
@@ -77,15 +77,27 @@ def main():
 
     translation_redundant_frac = len(df[df.original == df.augmented]) / len(df)
     print(f'Redundant translations: {100*translation_redundant_frac:.2f}%')
+    print(f'NaN translations: {df.augmented.isna().sum()}')
     # print(df.augmented.str.contains('train').sum())
     # print(df[df.original.str.contains('train')])
 
   if args.convert:
-    df = pd.read_csv(results_path)
+    # df = pd.read_csv(results_path)
+    # df = df[~df.augmented.isna()]
+    # df = df[df.original != df.augmented]
+    # data_dir = os.path.join('..', 'data')
+    # df.rename(columns={'augmented': 'review'}, inplace=True)
+    # df.drop(columns=['original'], inplace=True)
+    # df.to_csv(os.path.join(data_dir, 'augmented_final.csv'), index=False)
+
     data_dir = os.path.join('..', 'data')
-    df.rename(columns={'augmented': 'review'}, inplace=True)
-    df.drop(columns=['original'], inplace=True)
-    df.to_csv(os.path.join(data_dir, 'augmented_final.csv'), index=False)
+    results_path = os.path.join(data_dir, 'train_final.csv')
+    df = pd.read_csv(results_path)
+    df.drop(columns=['id'], inplace=True)
+    # print(df)
+    df.to_csv(os.path.join(data_dir, 'train_final.csv'), index=True)
+
+
 
 
 main()

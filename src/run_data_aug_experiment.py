@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import ml_collections
 import time
 import pickle
@@ -84,8 +85,9 @@ def train_all_data(
 def train_limited_data(
   config: ml_collections.ConfigDict, 
   device: str,
+  with_augmentations=True,
   data_size=300,
-  classes_to_track=[0,1]):
+  classes_to_track=[0,1,2,3,4,5,6,7]):
 
   valid_loader, test_loader = create_dataloader(config, 'valid')
   results = initialize_results_dict(classes_to_track)
@@ -93,24 +95,22 @@ def train_limited_data(
   # train_dataset = create_dataset()
   # augmented_dataset = create_dataset(split='augmented')
 
-  train_data_path = os.path.join(data_dir, 'train_final.csv')
-  aug_data_path = os.path.join(data_dir, 'train_final.csv')
+  train_data_path = os.path.join(config.data_dir, 'train_final.csv')
+  aug_data_path = os.path.join(config.data_dir, 'augmented_final.csv')
   df_train = pd.read_csv(train_data_path)
   df_aug = pd.read_csv(aug_data_path)
 
-  for i in range(3):
+  for i in range(5):
     selected_sample = df_train.sample(n=data_size, random_state=config.seeds[i])
-    print(selected_sample)
-    print(df_aug[df_aug.id in selected_sample.id])
-    dsf
-    indexes = np.arange(len(train_dataset))
-    rng = np.random.default_rng(config.seeds[i])
-    selected_indexes = rng.choice(indexes, data_size)
-    merged_ds = ConcatDataset(
-      [Subset(train_dataset, selected_indexes), Subset(augmented_dataset, selected_indexes)])
+    if with_augmentations:
+      augmented_sample = df_aug[np.isin(df_aug.id, selected_sample.id)]
+      selected_sample = pd.concat([selected_sample, augmented_sample])
+    selected_sample.drop(columns=['id'], inplace=True)
+    selected_sample.reset_index(inplace=True)
+    train_dataset = create_dataset(df=selected_sample)
 
     train_loader = torch.utils.data.DataLoader(
-      merged_ds, 
+      train_dataset, 
       batch_size=config.batch_size,
       shuffle=True)
 
@@ -144,6 +144,7 @@ def train_limited_data(
           results[class_index][metric_name].append(value)
 
     print('Saving results..')
-    results_path = os.path.join(config.results_dir, 'small', f'SUPERVISED_{data_size}.pkl')
+    results_path = os.path.join(
+      config.results_dir, 'small', f'SUPERVISED_{data_size}_aug_{with_augmentations}.pkl')
     with open(results_path, 'wb') as fp:
       pickle.dump(results, fp)

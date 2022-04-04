@@ -50,7 +50,7 @@ class EvDataset(Dataset):
       'label': torch.tensor(target, dtype=torch.float)
     }
 
-def create_dataset(split='train') -> Dataset:
+def create_dataset(split='train', df=None) -> Dataset:
   """Load and parse dataset.
 
   Args:
@@ -60,10 +60,14 @@ def create_dataset(split='train') -> Dataset:
   Returns:
       Dataset: EV dataset.
   """
-  assert split in ['train', 'test', 'valid', 'augmented']
-
-  df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
   tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+
+  if df is not None:
+    return EvDataset(df, tokenizer)
+
+  assert split in ['train', 'test', 'valid', 'augmented']
+  
+  df = pd.read_csv(os.path.join(DATA_DIR, f'{split}_final.csv'))
   return EvDataset(df, tokenizer)
 
 def create_dataloader(

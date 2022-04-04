@@ -6,6 +6,7 @@ import config.config as configs
 import torch
 import active_learning.visualisation as al_vis
 import visualisation.zero_shot as zs_vis
+import visualisation.augmentation as aug_vis
 import run_al_experiment as al_experiment
 import run_data_aug_experiment as aug_experiment
 
@@ -21,7 +22,7 @@ def main():
   parser.add_argument('--experiment', type=str,
                       help='Experiment name')
   parser.add_argument('--al_strategy', type=str,
-                      help='AL strategy to use e.g. RANDOM, MAX_ENTROPY, AVG_ENTROPY')
+                      help='AL strategy to use e.g. RANDOM, MAX_ENTROPY, CAL')
   parser.add_argument('--al_stratified', action='store_true',
                       help='Initial data batch will be created with stratified sampling.')
   parser.add_argument('--visualise', action='store_true',
@@ -81,12 +82,17 @@ def main():
     config = configs.active_learning_config()
 
   elif args.experiment == 'augmentation':
-    config = configs.augmentation_config
+    config = configs.augmentation_config()
+
+    if args.visualise:
+      aug_vis.visualise_full_data_results(config)
+      return
 
     if args.aug_mode == 'full':
       aug_experiment.train_all_data(config, device)
     elif args.aug_mode == 'small':
-      pass
+      aug_experiment.train_limited_data(config, device)
+      aug_experiment.train_limited_data(config, device, with_augmentations=False)
     elif args.aug_mode == 'al':
       pass
     else: 
