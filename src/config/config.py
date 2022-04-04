@@ -55,7 +55,8 @@ def backtranslation_config():
 
 def augmentation_config():
   config = multilabel_base()
-  config.results_path = os.path.join('..', 'results', 'augmentation')
+  config.results_dir = os.path.join('..', 'results', 'augmentation')
+  data_dir = os.path.join('..', 'data')
   config.seeds = [2, 42, 52, 62, 72]
   return config
 
