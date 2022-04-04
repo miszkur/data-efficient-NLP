@@ -85,6 +85,7 @@ def main():
     config = configs.augmentation_config()
 
     if args.visualise:
+      aug_vis.visualise_small_data_results(config)
       aug_vis.visualise_full_data_results(config)
       return
 
