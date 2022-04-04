@@ -51,4 +51,12 @@ def backtranslation_config():
   config = multilabel_base()
   config.results_path = os.path.join('..', 'results', 'backtranslation', 'augmented.csv')
   return config
+
+
+def augmentation_config():
+  config = multilabel_base()
+  config.results_path = os.path.join('..', 'results', 'augmentation')
+  config.seeds = [2, 42, 52, 62, 72]
+  return config
+
   

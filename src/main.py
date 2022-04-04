@@ -1,12 +1,13 @@
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 import argparse
 import config.config as configs
 import torch
 import active_learning.visualisation as al_vis
 import visualisation.zero_shot as zs_vis
-import run_al_experiment as experiment
+import run_al_experiment as al_experiment
+import run_data_aug_experiment as aug_experiment
 
 from run_al_experiment import run_active_learning_experiment, Strategy
 from run_zero_shot_experiment import run_zero_shot_experiment, run_zero_shot_for_semantic_neighbors
@@ -26,7 +27,10 @@ def main():
   parser.add_argument('--visualise', action='store_true',
                       help='Visualise results of the experiment.')
   parser.add_argument('--zs_var', action='store_true',
-                      help='Do zero shot for semantic neighbors to check variability.')
+                      help='Run zero shot for semantic neighbors to check variability.')
+  parser.add_argument('--aug_mode', type=str,
+                      help='For Data Augmentation experiment. \
+                      One of: full (all training data), small (limited training data), al (Active Learning + data aug).')
 
   args = parser.parse_args()
 
@@ -76,9 +80,21 @@ def main():
   elif args.experiment == 'al_visualise':
     config = configs.active_learning_config()
 
+  elif args.experiment == 'augmentation':
+    config = configs.augmentation_config
+
+    if args.aug_mode == 'full':
+      aug_experiment.train_all_data(config, device)
+    elif args.aug_mode == 'small':
+      pass
+    elif args.aug_mode == 'al':
+      pass
+    else: 
+      raise f'Incorrect aug_mode: {args.aug_mode}'
+
   elif args.experiment == 'supervised':
     config = configs.multilabel_base()
-    experiment.run_supervised_experiment(config, device, classes_to_track=[0,1])
+    al_experiment.run_supervised_experiment(config, device, classes_to_track=[0,1])
 
     # Test
     # save_model_path = os.path.join(config.results_dir, 'bert' + '.pth')
