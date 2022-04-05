@@ -4,6 +4,8 @@ load_dotenv()
 import argparse
 import config.config as configs
 import torch
+import os
+import pickle
 import active_learning.visualisation as al_vis
 import visualisation.zero_shot as zs_vis
 import visualisation.augmentation as aug_vis
@@ -32,6 +34,9 @@ def main():
   parser.add_argument('--aug_mode', type=str,
                       help='For Data Augmentation experiment. \
                       One of: full (all training data), small (limited training data), al (Active Learning + data aug).')
+  parser.add_argument('--data_size', type=int,
+                      help='For Data Augmentation experiment. \
+                      Size of the training set.')
 
   args = parser.parse_args()
 
@@ -84,18 +89,33 @@ def main():
   elif args.experiment == 'augmentation':
     config = configs.augmentation_config()
 
+    assert args.aug_mode in ['full', 'small', 'al_small']
+
     if args.visualise:
-      aug_vis.visualise_small_data_results(config)
-      aug_vis.visualise_full_data_results(config)
+      # aug_vis.visualise_small_data_results(config)
+      # aug_vis.visualise_full_data_results(config)
+      aug_vis.visualise_small_data_results(config, args.aug_mode, data_size=args.data_size)
       return
 
+    config.results_dir = os.path.join(config.results_dir, args.aug_mode)
     if args.aug_mode == 'full':
       aug_experiment.train_all_data(config, device)
     elif args.aug_mode == 'small':
       aug_experiment.train_limited_data(config, device)
       aug_experiment.train_limited_data(config, device, with_augmentations=False)
-    elif args.aug_mode == 'al':
-      pass
+    elif args.aug_mode == 'al_small':
+      config = configs.augmentation_al_config()
+      config.results_dir = os.path.join(config.results_dir, args.aug_mode)
+      results = run_active_learning_experiment(
+        config, 
+        device=device,
+        strategy_type=Strategy[config.query_strategy], 
+        classes_to_track=[i for i in range(8)])
+      results_path = os.path.join(config.results_dir, f'CAL.pkl')
+      with open(results_path, 'rb') as f:
+        results = pickle.load(f)
+        aug_experiment.train_limited_data(config, device, labeled_indexes=results['labeled_indexes'])
+        aug_experiment.train_limited_data(config, device, labeled_indexes=results['labeled_indexes'], with_augmentations=False)
     else: 
       raise f'Incorrect aug_mode: {args.aug_mode}'
 

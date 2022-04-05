@@ -26,6 +26,7 @@ class QueryStrategy:
     self.seed = seed
     self.batch_size = batch_size
     self.unlabeled_indexes = np.arange(start=0, stop=len(dataset))
+    self.labeled_indexes = []
 
   @abstractmethod
   def choose_samples_to_label(self, learner, train_loader=None):
@@ -40,6 +41,7 @@ class RandomStrategy(QueryStrategy):
     unlabeled_indexes, to_label_indexes = train_test_split(
       self.unlabeled_indexes, test_size=self.sample_size, random_state=self.seed)
     self.unlabeled_indexes = unlabeled_indexes
+    self.labeled_indexes.append(to_label_indexes)
     return torch.utils.data.Subset(self.dataset, to_label_indexes)
 
 class EntropyStrategy(QueryStrategy):
@@ -67,6 +69,7 @@ class EntropyStrategy(QueryStrategy):
       unlabeled_indexes, to_label_indexes = train_test_split(
         self.unlabeled_indexes, test_size=self.sample_size, random_state=self.seed)
       self.unlabeled_indexes = unlabeled_indexes
+      self.labeled_indexes.append(to_label_indexes)
       return Subset(self.dataset, to_label_indexes)
 
     unlabeled_dataset = Subset(self.dataset, self.unlabeled_indexes)
@@ -90,7 +93,7 @@ class EntropyStrategy(QueryStrategy):
     new_indices_to_label = partitioned_indices[-self.sample_size:]
     to_label_indexes = self.unlabeled_indexes[new_indices_to_label]
     self.unlabeled_indexes = np.delete(self.unlabeled_indexes, new_indices_to_label)
-
+    self.labeled_indexes.append(to_label_indexes)
     return torch.utils.data.Subset(self.dataset, to_label_indexes)
 
 
@@ -125,6 +128,7 @@ class CALStrategy(QueryStrategy):
       unlabeled_indexes, to_label_indexes = train_test_split(
         self.unlabeled_indexes, test_size=self.sample_size, random_state=self.seed)
       self.unlabeled_indexes = unlabeled_indexes
+      self.labeled_indexes.append(to_label_indexes)
       return Subset(self.dataset, to_label_indexes)
     
     train_embeddings, train_logits, train_labels = self.process_labeled_data(learner, train_loader)
@@ -171,6 +175,5 @@ class CALStrategy(QueryStrategy):
     new_indices_to_label = partitioned_indices[-self.sample_size:]
     to_label_indexes = self.unlabeled_indexes[new_indices_to_label]
     self.unlabeled_indexes = np.delete(self.unlabeled_indexes, new_indices_to_label)
-
-    data_to_label = torch.utils.data.Subset(self.dataset, to_label_indexes)
-    return data_to_label
+    self.labeled_indexes.append(to_label_indexes)
+    return torch.utils.data.Subset(self.dataset, to_label_indexes)

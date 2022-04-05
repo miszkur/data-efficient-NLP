@@ -54,7 +54,8 @@ def initialize_results_dict(classes_to_track):
     'train_time': [], 
     'sampling_time': [],
     'sampling_emissions': [],
-    'al_iteration_time': []
+    'al_iteration_time': [],
+    'labeled_indexes': []
   }
   for class_index in classes_to_track:
     results[class_index] = {
@@ -88,6 +89,7 @@ def run_active_learning_experiment(
   train_dataset = create_dataset()
   num_al_iters = config.num_al_iters
   results = initialize_results_dict(classes_to_track)
+  iteration_num_data_indexes = {}
 
   for al_i, seed in enumerate(config.seeds):
     print(f'=== Active Learning experiment for seed {al_i+1}/{len(config.seeds)} ===')
@@ -139,6 +141,7 @@ def run_active_learning_experiment(
         labeled_data = ConcatDataset([labeled_data, new_labeled_data])
 
     results['al_iteration_time'].append(time.time() - al_iteration_start_time)
+    results['labeled_indexes'].append(strategy.labeled_indexes)
 
     print('Saving results..')
     filename = config.query_strategy

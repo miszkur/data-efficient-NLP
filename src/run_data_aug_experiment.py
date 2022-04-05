@@ -85,7 +85,8 @@ def train_limited_data(
   device: str,
   with_augmentations=True,
   data_size=300,
-  classes_to_track=[0,1,2,3,4,5,6,7]):
+  classes_to_track=[0,1,2,3,4,5,6,7],
+  labeled_indexes=None):
 
   valid_loader, test_loader = create_dataloader(config, 'valid')
   results = initialize_results_dict(classes_to_track)
@@ -96,7 +97,12 @@ def train_limited_data(
   df_aug = pd.read_csv(aug_data_path)
 
   for i in range(5):
-    selected_sample = df_train.sample(n=data_size, random_state=config.seeds[i])
+    if labeled_indexes is None:
+      selected_sample = df_train.sample(n=data_size, random_state=config.seeds[i])      
+    else:
+      selected_indexes = np.array(labeled_indexes[i]).flatten()
+      selected_sample = df_train.iloc[selected_indexes]
+      data_size = selected_sample.shape[0]
     if with_augmentations:
       augmented_sample = df_aug[np.isin(df_aug.id, selected_sample.id)]
       selected_sample = pd.concat([selected_sample, augmented_sample])
@@ -138,8 +144,8 @@ def train_limited_data(
         if metric_name in list(results[class_index].keys()):
           results[class_index][metric_name].append(value)
 
-    print('Saving results..')
     results_path = os.path.join(
-      config.results_dir, 'small', f'SUPERVISED_{data_size}_aug_{with_augmentations}.pkl')
+      config.results_dir, f'SUPERVISED_{data_size}_aug_{with_augmentations}.pkl')
+    print('Saving results to', results_path)
     with open(results_path, 'wb') as fp:
       pickle.dump(results, fp)

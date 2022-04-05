@@ -24,9 +24,14 @@ def visualise_full_data_results(config):
       results_no_aug = pickle.load(f2)
       print_summary(results, results_no_aug)
 
-def visualise_small_data_results(config):
-  no_aug_results_path = os.path.join(config.results_dir, 'small', f'SUPERVISED_300_aug_False.pkl')
-  results_path = os.path.join(config.results_dir, 'small', f'SUPERVISED_300_aug_True.pkl')
+def visualise_small_data_results(config, aug_mode='small', data_size=300):
+  if aug_mode == 'full':
+    filename = 'SUPERVISED'
+  else:
+    filename = f'SUPERVISED_{data_size}'
+
+  no_aug_results_path = os.path.join(config.results_dir, aug_mode, f'{filename}_aug_False.pkl')
+  results_path = os.path.join(config.results_dir, aug_mode, f'{filename}_aug_True.pkl')
 
   with open(results_path, 'rb') as f:
     results = pickle.load(f)

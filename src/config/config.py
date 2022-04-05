@@ -60,4 +60,10 @@ def augmentation_config():
   config.seeds = [2, 42, 52, 62, 72]
   return config
 
+def augmentation_al_config():
+  config = augmentation_config()
+  config.sample_size = 48
+  config.num_al_iters = 17
+  config.query_strategy = 'CAL'
+  return config
   
