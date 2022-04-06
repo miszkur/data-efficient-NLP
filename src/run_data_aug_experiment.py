@@ -29,7 +29,7 @@ def initialize_results_dict(classes_to_track):
 def train_all_data(
   config: ml_collections.ConfigDict, 
   device: str,
-  classes_to_track=[0,1]):
+  classes_to_track=[0,1,2,3,4,5,6,7]):
 
   valid_loader, test_loader = create_dataloader(config, 'valid')
   results = initialize_results_dict(classes_to_track)
@@ -38,7 +38,7 @@ def train_all_data(
   augmented_dataset = create_dataset(split='augmented')
   merged_ds = ConcatDataset([train_dataset, augmented_dataset])
 
-  for _ in range(3):
+  for _ in range(5):
     train_loader = DataLoader(
       merged_ds, 
       batch_size=config.batch_size,
@@ -86,6 +86,7 @@ def train_limited_data(
   with_augmentations=True,
   data_size=300,
   classes_to_track=[0,1,2,3,4,5,6,7],
+  num_splits = 2, # How many AL splits to take
   labeled_indexes=None):
 
   valid_loader, test_loader = create_dataloader(config, 'valid')
@@ -100,7 +101,8 @@ def train_limited_data(
     if labeled_indexes is None:
       selected_sample = df_train.sample(n=data_size, random_state=config.seeds[i])      
     else:
-      selected_indexes = np.array(labeled_indexes[i]).flatten()
+      indexes = labeled_indexes[i][:num_splits] 
+      selected_indexes = np.array(indexes).flatten()
       selected_sample = df_train.iloc[selected_indexes]
       data_size = selected_sample.shape[0]
     if with_augmentations:

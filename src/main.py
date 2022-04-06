@@ -93,8 +93,8 @@ def main():
 
     if args.visualise:
       # aug_vis.visualise_small_data_results(config)
-      # aug_vis.visualise_full_data_results(config)
-      aug_vis.visualise_small_data_results(config, args.aug_mode, data_size=args.data_size)
+      aug_vis.visualise_full_data_results(config)
+      # aug_vis.visualise_small_data_results(config, args.aug_mode, data_size=args.data_size)
       return
 
     config.results_dir = os.path.join(config.results_dir, args.aug_mode)
@@ -106,11 +106,12 @@ def main():
     elif args.aug_mode == 'al_small':
       config = configs.augmentation_al_config()
       config.results_dir = os.path.join(config.results_dir, args.aug_mode)
-      results = run_active_learning_experiment(
-        config, 
-        device=device,
-        strategy_type=Strategy[config.query_strategy], 
-        classes_to_track=[i for i in range(8)])
+      # No need to run if the results are saved in config.results_dir. 
+      # results = run_active_learning_experiment(
+      #   config, 
+      #   device=device,
+      #   strategy_type=Strategy[config.query_strategy], 
+      #   classes_to_track=[i for i in range(8)])
       results_path = os.path.join(config.results_dir, f'CAL.pkl')
       with open(results_path, 'rb') as f:
         results = pickle.load(f)
