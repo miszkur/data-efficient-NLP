@@ -16,6 +16,7 @@ per_class_support = {
   'dealership': 75
 }
 
+
 def print_summary(results, results_no_aug):
   for key in results.keys():
     if type(key) is int:
@@ -25,6 +26,7 @@ def print_summary(results, results_no_aug):
       num_spaces_left = 25 - len(key)
       print(f'{key} {num_spaces_left*" "} | {np.mean(results[key]):.2f} ({np.std(results[key]):.2f}) \
       | {np.mean(results_no_aug[key]):.2f} ({np.std(results_no_aug[key]):.2f})')
+
 
 def print_latex_summary(results, results_no_aug):
   incorrect_predictions_sum = []
@@ -61,15 +63,6 @@ def print_latex_summary(results, results_no_aug):
     print(f' & {np.mean(results[metric]):.2f} ({np.std(results[metric]):.2f}) ', end='')
   print(f' & {np.mean(incorrect_predictions_no_aug_sum):.2f} ({np.std(incorrect_predictions_no_aug_sum):.2f}) \\\\')
 
-def visualise_full_data_results(config):
-  no_aug_results_path = os.path.join(config.results_dir, 'full', 'supervised', f'SUPERVISED_aug_False.pkl')
-  results_path = os.path.join(config.results_dir, 'full', f'SUPERVISED_aug_True.pkl')
-
-  with open(results_path, 'rb') as f:
-    results = pickle.load(f)
-    with open(no_aug_results_path, 'rb') as f2:
-      results_no_aug = pickle.load(f2)
-      print_summary(results, results_no_aug)
 
 def visualise_augmentation_results(config, aug_mode='small', data_size=300):
   if aug_mode == 'full':
