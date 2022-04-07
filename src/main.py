@@ -34,12 +34,13 @@ def main():
   parser.add_argument('--aug_mode', type=str,
                       help='For Data Augmentation experiment. \
                       One of: full (all training data), small (limited training data), al (Active Learning + data aug).')
-  parser.add_argument('--data_size', type=int,
+  parser.add_argument('--data_size', type=int, default=300,
                       help='For Data Augmentation experiment. \
                       Size of the training set.')
 
   args = parser.parse_args()
 
+  # Zero-Shot Experiments.
   if args.experiment == 'zero-shot':
     config = configs.zero_shot_config()
 
@@ -57,6 +58,7 @@ def main():
     else:
       run_zero_shot_experiment(config, config.class_names)
 
+  # Active Learning Experiments.
   elif args.experiment == 'al':
     config = configs.active_learning_config()
 
@@ -83,36 +85,34 @@ def main():
         device=device,
         strategy_type=Strategy[args.al_strategy], 
         first_sample_stratified=args.al_stratified)
-  elif args.experiment == 'al_visualise':
-    config = configs.active_learning_config()
 
+  # Data Augmentation Experiment.
   elif args.experiment == 'augmentation':
     config = configs.augmentation_config()
 
     assert args.aug_mode in ['full', 'small', 'al_small']
 
     if args.visualise:
-      # aug_vis.visualise_small_data_results(config)
-      aug_vis.visualise_full_data_results(config)
-      # aug_vis.visualise_small_data_results(config, args.aug_mode, data_size=args.data_size)
+      aug_vis.visualise_augmentation_results(config, args.aug_mode, data_size=args.data_size)
       return
 
     config.results_dir = os.path.join(config.results_dir, args.aug_mode)
     if args.aug_mode == 'full':
-      aug_experiment.train_all_data(config, device)
+      # aug_experiment.train_all_data(config, device)
+      aug_experiment.train_all_data(config, device, with_augmentations=False)
     elif args.aug_mode == 'small':
       aug_experiment.train_limited_data(config, device)
       aug_experiment.train_limited_data(config, device, with_augmentations=False)
     elif args.aug_mode == 'al_small':
       config = configs.augmentation_al_config()
       config.results_dir = os.path.join(config.results_dir, args.aug_mode)
-      # No need to run if the results are saved in config.results_dir. 
-      # results = run_active_learning_experiment(
-      #   config, 
-      #   device=device,
-      #   strategy_type=Strategy[config.query_strategy], 
-      #   classes_to_track=[i for i in range(8)])
       results_path = os.path.join(config.results_dir, f'CAL.pkl')
+      if not os.path.exists(results_path):
+        results = run_active_learning_experiment(
+          config, 
+          device=device,
+          strategy_type=Strategy[config.query_strategy], 
+          classes_to_track=[i for i in range(8)])
       with open(results_path, 'rb') as f:
         results = pickle.load(f)
         aug_experiment.train_limited_data(config, device, labeled_indexes=results['labeled_indexes'])
@@ -120,6 +120,7 @@ def main():
     else: 
       raise f'Incorrect aug_mode: {args.aug_mode}'
 
+  # Supervised Learning in full data mode. 
   elif args.experiment == 'supervised':
     config = configs.multilabel_base()
     al_experiment.run_supervised_experiment(config, device, classes_to_track=[0,1])
