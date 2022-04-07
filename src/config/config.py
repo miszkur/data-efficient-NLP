@@ -49,7 +49,7 @@ def zero_shot_config():
 
 def backtranslation_config():
   config = multilabel_base()
-  config.results_path = os.path.join('..', 'results', 'backtranslation', 'augmented.csv')
+  config.results_path = os.path.join('..', '..', 'results', 'backtranslation', 'augmented.csv')
   return config
 
 

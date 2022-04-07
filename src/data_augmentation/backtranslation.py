@@ -1,13 +1,20 @@
 """Script for backtranslating the dataset."""
 
-from sklearn.utils import resample
 import nlpaug.augmenter.word as naw
+import sys
+sys.path.append( '..' )
 import config.config as configs
 import os
 import csv
 import argparse
 import pandas as pd
+import torch
+import string
 
+from gramformer import Gramformer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_selection import chi2
+from sklearn.utils import resample
 from data_processing.ev_parser import create_dataset, create_dataloader
 from tqdm import tqdm
 
@@ -48,6 +55,49 @@ def run_backtranslation(config):
         w.writerows(results)
         results = []
 
+
+def data_quality(df, cut_prop=1, filter_set = set()):
+  train_Y = df[CLASS_NAMES]
+  train_Y = train_Y.values
+  vectorizer = CountVectorizer(lowercase=False)
+  texts = df.review.tolist()
+  train_X = vectorizer.fit_transform(texts)
+
+  F, pvalues_f = chi2(train_X, train_Y)
+  last = int(len(F) * cut_prop)
+  sorted_F = sorted(zip(vectorizer.get_feature_names(), F), key=lambda x: x[1], reverse=True)[:last]
+  values = [value for name, value in sorted_F if name not in filter_set]
+
+  print(f'Data quality: {(sum(values) / len(values)):.2f}')
+
+def gramatical_correctness(df):
+  def set_seed(seed):
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+      torch.cuda.manual_seed_all(seed)
+
+  set_seed(1212)
+
+  gf = Gramformer(models = 1, use_gpu=True) # 1=corrector, 2=detector
+  
+  sentences = df.review.tolist()
+  influent_sentences_num = 0
+  checked_sentences_num = 0
+  for sentence in tqdm(sentences):
+    if len(sentence.split()) > 55:
+      continue
+
+    checked_sentences_num += 1
+    sentence_base = " ".join(sentence.split()) 
+    corrected_sentences = gf.correct(sentence_base, max_candidates=1)
+    sentence_base = sentence_base.translate(str.maketrans('', '', string.punctuation))
+    for corrected_sentence in corrected_sentences:
+      corrected_sentence = corrected_sentence.translate(str.maketrans('', '', string.punctuation))
+      if sentence_base.lower() != corrected_sentence.lower():
+        influent_sentences_num += 1
+  influent_sentences_percent = influent_sentences_num*100/checked_sentences_num
+  print(f'Number of incorrect sentences: {influent_sentences_num} ({influent_sentences_percent:.2f}%)')
+
 def main():
   parser = argparse.ArgumentParser(description='Process some integers.')
   parser.add_argument('--visualise', action='store_true',
@@ -60,6 +110,7 @@ def main():
 
   config = configs.backtranslation_config()
   results_path = config.results_path
+  data_dir = os.path.join('..', '..', 'data')
 
   if args.run:
     run_backtranslation(config)
@@ -67,18 +118,31 @@ def main():
   if args.visualise:
     df = pd.read_csv(results_path)
 
-    translation_redundant_frac = len(df[df.original == df.augmented]) / len(df)
-    print(f'Redundant translations: {100*translation_redundant_frac:.2f}%')
-    print(f'NaN translations: {df.augmented.isna().sum()}')
-    print(f'Word "train": \
-          \n original contains {df[df.original.str.contains('train')]}, \
-          \n augmented {df.augmented.str.contains('train').sum()}')
+    redundant_translations = len(df[df.original == df.augmented])
+    redundant_translations_percent = 100 * redundant_translations / len(df)
+    print(f'Redundant translations: {redundant_translations} {redundant_translations_percent:.2f}%')
+    nan_translations = df.augmented.isna().sum()
+    nan_translations_percent = 100 * nan_translations / len(df)
+    print(f'NaN translations: {nan_translations} ({nan_translations_percent:.2f}%)')
+    print(f"""Word "train": 
+          original contains {df[df.original.str.contains('train')].shape[0]}, 
+          augmented {df.augmented.str.contains('train').sum()}""")
+    
+    df_aug = pd.read_csv(os.path.join(data_dir, 'augmented_final.csv'))
+    df_train = pd.read_csv(os.path.join(data_dir, 'train_final.csv'))
+
+    # print('Train set')
+    # gramatical_correctness(df_train)
+    # print('Augmented set')
+    # gramatical_correctness(df_aug)
+    data_quality(df_train)
+    data_quality(df_aug)
+
 
   if args.convert:
     df = pd.read_csv(results_path)
     df = df[~df.augmented.isna()]
     df = df[df.original != df.augmented]
-    data_dir = os.path.join('..', 'data')
     df.rename(columns={'augmented': 'review'}, inplace=True)
     df.drop(columns=['original'], inplace=True)
     df.to_csv(os.path.join(data_dir, 'augmented_final.csv'), index=False)

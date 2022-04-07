@@ -15,3 +15,4 @@ ENV HOME=$DOCKER_WORKSPACE_PATH/.home
 # RUN pip install ...
 COPY ./requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
+RUN pip install -U git+https://github.com/PrithivirajDamodaran/Gramformer.git
