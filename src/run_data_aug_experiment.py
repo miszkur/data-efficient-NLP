@@ -29,18 +29,20 @@ def initialize_results_dict(classes_to_track):
 def train_all_data(
   config: ml_collections.ConfigDict, 
   device: str,
-  classes_to_track=[0,1,2,3,4,5,6,7]):
+  classes_to_track=[0,1,2,3,4,5,6,7],
+  with_augmentations=True):
 
   valid_loader, test_loader = create_dataloader(config, 'valid')
   results = initialize_results_dict(classes_to_track)
 
   train_dataset = create_dataset()
-  augmented_dataset = create_dataset(split='augmented')
-  merged_ds = ConcatDataset([train_dataset, augmented_dataset])
+  if with_augmentations:
+    augmented_dataset = create_dataset(split='augmented')
+    train_dataset = ConcatDataset([train_dataset, augmented_dataset])
 
   for _ in range(5):
     train_loader = DataLoader(
-      merged_ds, 
+      train_dataset, 
       batch_size=config.batch_size,
       shuffle=True)
 
@@ -74,7 +76,7 @@ def train_all_data(
           results[class_index][metric_name].append(value)
 
     print('Saving results..')
-    results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
+    results_path = os.path.join(config.results_dir, f'SUPERVISED_aug_{with_augmentations}.pkl')
     with open(results_path, 'wb') as fp:
       pickle.dump(results, fp)
 
