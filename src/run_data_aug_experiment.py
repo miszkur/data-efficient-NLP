@@ -74,7 +74,7 @@ def train_all_data(
           results[class_index][metric_name].append(value)
 
     print('Saving results..')
-    results_path = os.path.join(config.results_dir, 'full', f'SUPERVISED.pkl')
+    results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
     with open(results_path, 'wb') as fp:
       pickle.dump(results, fp)
 
