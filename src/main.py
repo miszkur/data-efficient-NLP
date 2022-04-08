@@ -101,8 +101,8 @@ def main():
       # aug_experiment.train_all_data(config, device)
       aug_experiment.train_all_data(config, device, with_augmentations=False)
     elif args.aug_mode == 'small':
-      aug_experiment.train_limited_data(config, device)
-      aug_experiment.train_limited_data(config, device, with_augmentations=False)
+      aug_experiment.train_limited_data(config, device, data_size=args.data_size)
+      aug_experiment.train_limited_data(config, device, with_augmentations=False, data_size=args.data_size)
     elif args.aug_mode == 'al_small':
       config = configs.augmentation_al_config()
       config.results_dir = os.path.join(config.results_dir, args.aug_mode)
