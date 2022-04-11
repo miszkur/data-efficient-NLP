@@ -29,14 +29,13 @@ def print_summary(results, results_no_aug):
 
 
 def print_latex_summary(results, results_no_aug):
-  incorrect_predictions_sum = []
-  incorrect_predictions_no_aug_sum = []
+  incorrect_predictions_sum = np.zeros(5)
+  incorrect_predictions_no_aug_sum = np.zeros(5)
   for key in results.keys():
     if type(key) is int:
-      incorrect_predictions_sum.append(
-        np.sum(results[key]['incorrect_predictions']))
-      incorrect_predictions_no_aug_sum.append(
-        np.sum(results_no_aug[key]['incorrect_predictions']))
+      incorrect_predictions_sum += np.array(results[key]['incorrect_predictions'])
+      incorrect_predictions_no_aug_sum += np.array(results_no_aug[key]['incorrect_predictions'])
+
       print(f'\n{CLASS_NAMES[key]} & No ', end='')
       for metric in class_metrics:
         print(f' & {np.mean(results_no_aug[key][metric]):.2f} ({np.std(results_no_aug[key][metric]):.2f}) ', end='')
@@ -57,11 +56,11 @@ def print_latex_summary(results, results_no_aug):
   print('No', end='')
   for metric in general_metrics:
     print(f' & {np.mean(results_no_aug[metric]):.2f} ({np.std(results_no_aug[metric]):.2f}) ', end='')
-  print(f' & {np.mean(incorrect_predictions_sum):.2f} ({np.std(incorrect_predictions_sum):.2f}) \\\\')
+  print(f' & {np.mean(incorrect_predictions_no_aug_sum):.2f} ({np.std(incorrect_predictions_no_aug_sum):.2f}) \\\\')
   print('Yes', end='')
   for metric in general_metrics:
     print(f' & {np.mean(results[metric]):.2f} ({np.std(results[metric]):.2f}) ', end='')
-  print(f' & {np.mean(incorrect_predictions_no_aug_sum):.2f} ({np.std(incorrect_predictions_no_aug_sum):.2f}) \\\\')
+  print(f' & {np.mean(incorrect_predictions_sum):.2f} ({np.std(incorrect_predictions_sum):.2f}) \\\\')
 
 
 def visualise_augmentation_results(config, aug_mode='small', data_size=300):
