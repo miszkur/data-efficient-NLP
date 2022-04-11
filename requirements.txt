@@ -11,3 +11,4 @@ scikit-multilearn
 codecarbon
 gensim
 nlpaug
+tensorboardX

@@ -4,9 +4,7 @@ import argparse
 import tqdm
 
 from models.encoders.bert_encoder import BERTEncoder
-from utils.data import get_jsonl_data
 from utils.python import now, set_seeds
-from utils.few_shot import create_ARSC_train_episode, get_ARSC_test_tasks
 import random
 import collections
 import os
