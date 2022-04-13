@@ -84,8 +84,6 @@ class ProtoNet(nn.Module):
 
         elif self.metric == "cosine":
             supervised_dists = (-cosine_similarity(z_query, z_support) + 1) * 5
-            if has_augmentations:
-                unsupervised_dists = (-cosine_similarity(z_aug_query, z_aug_support) + 1) * 5
         else:
             raise NotImplementedError
 
