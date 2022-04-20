@@ -4,6 +4,7 @@ import numpy as np
 
 CLASS_NAMES = ['functionality','range_anxiety','availability','cost','ui','location','service_time','dealership']
 class_metrics = ['accuracy', 'f1_score', 'incorrect_predictions']
+class_metrics = ['precision', 'recall']
 general_metrics = ['accuracy', 'f1_score', 'train_time']
 per_class_support = {
   'functionality': 286,
@@ -27,8 +28,22 @@ def print_summary(results, results_no_aug):
       print(f'{key} {num_spaces_left*" "} | {np.mean(results[key]):.2f} ({np.std(results[key]):.2f}) \
       | {np.mean(results_no_aug[key]):.2f} ({np.std(results_no_aug[key]):.2f})')
 
+def print_with_support(results, key):
+  print(f' & {per_class_support[CLASS_NAMES[key]]}', end='')
+  print('\\\\')
+  print(f' & Yes', end='')
+  for metric in class_metrics:
+    print(f' & {np.mean(results[key][metric]):.2f} ({np.std(results[key][metric]):.2f}) ', end='')
+  print(' & \\\\ \\hline')
 
-def print_latex_summary(results, results_no_aug):
+def print_without_support(results, key):
+  print('\\\\')
+  print(f' & Yes', end='')
+  for metric in class_metrics:
+    print(f' & {np.mean(results[key][metric]):.2f} ({np.std(results[key][metric]):.2f}) ', end='')
+  print('\\\\ \\hline')
+
+def print_latex_summary(results, results_no_aug, with_support=False):
   incorrect_predictions_sum = np.zeros(5)
   incorrect_predictions_no_aug_sum = np.zeros(5)
   for key in results.keys():
@@ -40,12 +55,10 @@ def print_latex_summary(results, results_no_aug):
       for metric in class_metrics:
         print(f' & {np.mean(results_no_aug[key][metric]):.2f} ({np.std(results_no_aug[key][metric]):.2f}) ', end='')
       
-      print(f' & {per_class_support[CLASS_NAMES[key]]}', end='')
-      print('\\\\')
-      print(f' & Yes', end='')
-      for metric in class_metrics:
-        print(f' & {np.mean(results[key][metric]):.2f} ({np.std(results[key][metric]):.2f}) ', end='')
-      print(' & \\\\ \\hline')
+      if with_support:
+        print_with_support(results, key)
+      else:
+        print_without_support(results, key)
 
   # Print the header.
   print('\nAugmentation ', end='')
