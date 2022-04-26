@@ -1,8 +1,11 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import ml_collections
 import config.config as configs
 import torch
 from few_shot.few_shot_learner import FewShotLearner
-from few_shot.prototype_network import ProtoypeNetwork
+from few_shot.prototypical_network import PrototypicalNetwork
 import time
 
 def run_supervised_experiment(
@@ -19,10 +22,10 @@ def run_supervised_experiment(
   # results['training_emissions'] = []
 
   for _ in range(5):
-    model = ProtoypeNetwork(config=config.bert, device=device) 
+    model = PrototypicalNetwork(config=config, device=device) 
     model.to(device)
     # Train
-    learner = FewShotLearner(device, model, config.results_dir)
+    learner = FewShotLearner(device, model, config)
     # tracker = EmissionsTracker()
     # tracker.start()
     train_start_time = time.time()
@@ -51,7 +54,7 @@ def run_supervised_experiment(
       pickle.dump(results, fp)
 
 
-config = configs.multilabel_base()
+config = configs.few_shot_config()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 run_supervised_experiment(config, device)

@@ -14,23 +14,24 @@ from transformers import get_cosine_schedule_with_warmup
 from few_shot.data import FewShotDataLoader
 
 class FewShotLearner:
-  def __init__(self, device, model, results_dir=None, num_classes=8):
-    self.n_way = 3
-    self.k_shot = 5
+  def __init__(self, device, model, config):
+    self.num_tasks = 4
     self.hamming_distance = HammingDistance()
-    self.f1_macro = F1Score(num_classes=num_classes, average='macro')
+    self.num_classes = config.n_way
+    self.f1_macro = F1Score(num_classes=self.num_classes, average='macro')
     self.device = device
     self.history = {
       'loss': [], 'val_loss': [], 'accuracy': [], 'val_accuracy': []
       }
-    self.bce_loss = nn.BCEWithLogitsLoss()
+    self.bce_loss = nn.BCELoss()
     self.model = model
-    if results_dir is not None:
-      self.save_model_path = os.path.join(results_dir, 'bert' + '.pth')
-    self.results_dir = results_dir
-    self.num_classes = num_classes
+    if config.results_dir is not None:
+      self.save_model_path = os.path.join(config.results_dir, 'bert' + '.pth')
+    self.results_dir = config.results_dir
 
   def train(self, config, train_loader=None, validation_loader=None):
+    self.n_way = config.n_way
+    self.k_shot = config.k_shot
     num_epochs = config.num_epochs
     best_model = None
     epochs_val_loss_increase = 0
@@ -40,38 +41,30 @@ class FewShotLearner:
       lr=config.lr,
       weight_decay=config.weight_decay)
 
-    if train_loader is None:
-      train_loader = create_dataloader(config)
-    if validation_loader is None:
-      validation_loader, _ = create_dataloader(config, 'valid')
-
     episode_loader = FewShotDataLoader()
+    episode_valid_loader = FewShotDataLoader(split='valid')
 
-    num_training_steps = num_epochs * len(train_loader)
     val_loss_prev = 1
-    max_iter = 10_000
+    max_iter = 10
     for epoch_num in range(num_epochs):
       print('Epoch {}/{}'.format(epoch_num, num_epochs - 1))
       episode_iterator = tqdm(range(max_iter), total=max_iter)
       running_loss = 0.0
       accuracy = 0.0
       for iter in episode_iterator:
-        episode = episode_loader.create_episode(
-          n_classes=self.n_way, n_support=self.k_shot, n_query=self.k_shot)
-
-        loss, current_accuracy = self.training_step(episode)
+        loss, current_accuracy = self.training_step(episode_loader)
 
         accuracy += current_accuracy
         running_loss += loss
         episode_iterator.set_postfix(loss=(loss), accuracy=(current_accuracy))
       
-      train_loss = running_loss / len(train_loader)
-      train_accuracy = accuracy / len(train_loader)
+      train_loss = running_loss / max_iter
+      train_accuracy = accuracy / max_iter
       
-      val_loss, val_accuracy, _ = self.evaluate(validation_loader)
+      val_loss, val_accuracy, val_f1 = self.evaluate(episode_valid_loader)
 
-      print(f'Training loss: {train_loss:.4f}, Training accuracy: {train_accuracy:.4f}')
-      print(f'Validation Loss: {val_loss:.4f},  Validation accuracy: {val_accuracy:.4f}')
+      print(f'Training loss: {train_loss:.4f}, accuracy: {train_accuracy:.4f}')
+      print(f'Validation Loss: {val_loss:.4f},  accuracy: {val_accuracy:.4f}, F1-score: {val_f1:.4f}')
 
       self.update_history_dict(train_loss, val_loss, train_accuracy, val_accuracy)
 
@@ -93,14 +86,25 @@ class FewShotLearner:
   def inference(self, episode, return_cls=False):
     return self.model(episode)
 
-  def training_step(self, episode):
+  def training_step(self, episode_loader):
+
     self.model.train()
     self.optimizer.zero_grad()
-    outputs = self.inference(episode)
-    labels = batch['label'].to(self.device, dtype=torch.float)
+    loss = None
+    for i in range(self.num_tasks):
+      episode = episode_loader.create_episode(
+          n_classes=self.n_way, n_support=self.k_shot, n_query=self.k_shot)
 
-    loss = self.bce_loss(outputs, labels)
+      outputs = self.inference(episode)
+      labels = torch.stack(episode['label']).to(self.device)
+
+      if loss is None:
+        loss = self.bce_loss(outputs, labels)
+      else:
+        loss += self.bce_loss(outputs, labels)
+
     loss.backward()
+
     torch.nn.utils.clip_grad_norm_(
       self.model.parameters(), self.max_grad_norm)
     self.optimizer.step()
@@ -108,7 +112,7 @@ class FewShotLearner:
     accuracy, _ = self.compute_metrics(outputs, labels)
     return loss.item(), accuracy
 
-  def evaluate(self, data_loader, classes=[]):
+  def evaluate(self, episode_loader, classes=[]):
     self.model.eval() 
     acc_loss = 0
     acc_accuracy = 0
@@ -119,23 +123,30 @@ class FewShotLearner:
 
     y_true = []
     y_pred = []
+    eval_steps = 0
     with torch.no_grad():
-      for batch in data_loader:
-        outputs = self.inference(batch)
-        labels = batch['label'].to(self.device, dtype=torch.float)
+      for i in range(25):
+        episode, rand_keys = episode_loader.create_episode(
+          n_classes=self.n_way, n_support=self.k_shot, n_query=self.k_shot, return_keys=True)
+        outputs = self.inference(episode)
+        labels = torch.stack(episode['label']).to(self.device)
         
         loss = self.bce_loss(outputs, labels)
         acc_loss += loss.item()
+        print(outputs)
+        print(rand_keys)
+        print()
         accuracy, f1_score = self.compute_metrics(outputs, labels)
         acc_accuracy += accuracy
         acc_f1_score += f1_score
 
         y_true.append(labels.cpu().numpy())
         y_pred.append(np.round(torch.sigmoid(outputs).cpu().numpy()))
+        eval_steps += 1
 
-    acc_loss /= len(data_loader)
-    acc_accuracy /= len(data_loader)
-    acc_f1_score /= len(data_loader)
+    acc_loss /= eval_steps
+    acc_accuracy /= eval_steps
+    acc_f1_score /= eval_steps
 
     if len(classes) == 0:
       return acc_loss, acc_accuracy, acc_f1_score

@@ -67,3 +67,9 @@ def augmentation_al_config():
   config.query_strategy = 'CAL'
   return config
   
+def few_shot_config():
+  config = multilabel_base()
+  config.n_way = 3
+  config.k_shot = 5
+  config.lr = 1e-4
+  return config
