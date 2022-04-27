@@ -23,15 +23,15 @@ from active_learning.visualisation import plot_al_results
 
 def initialize_strategy(strategy: Strategy, train_dataset, config, seed):
   if strategy == Strategy.RANDOM:
-    return al.RandomStrategy(train_dataset, config.sample_size, config.batch_size, seed)
+    return al.RandomStrategy(train_dataset, config, seed)
   elif strategy == Strategy.AVG_ENTROPY:
     return al.EntropyStrategy(
-      train_dataset, strategy, config.sample_size, config.batch_size, seed)
+      train_dataset, strategy, config, seed)
   elif strategy == Strategy.MAX_ENTROPY:
     return al.EntropyStrategy(
-      train_dataset, strategy, config.sample_size, config.batch_size, seed)
+      train_dataset, strategy, config, seed)
   elif strategy == Strategy.CAL:
-    return al.CALStrategy(train_dataset, config.sample_size, config.batch_size, seed)
+    return al.CALStrategy(train_dataset, config, seed)
 
 def get_stratified_sample(dataset, config, strategy):
   targets = dataset.targets

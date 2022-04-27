@@ -104,7 +104,7 @@ def main():
       aug_experiment.train_limited_data(config, device, data_size=args.data_size)
       aug_experiment.train_limited_data(config, device, with_augmentations=False, data_size=args.data_size)
     elif args.aug_mode == 'al_small':
-      config = configs.augmentation_al_config()
+      config = configs.augmentation_al_data_config()
       config.results_dir = os.path.join(config.results_dir, args.aug_mode)
       results_path = os.path.join(config.results_dir, f'CAL.pkl')
       if not os.path.exists(results_path):
@@ -119,6 +119,17 @@ def main():
         aug_experiment.train_limited_data(config, device, labeled_indexes=results['labeled_indexes'], with_augmentations=False)
     else: 
       raise f'Incorrect aug_mode: {args.aug_mode}'
+
+  # Use augmented samples in an Active Learning framework.
+  elif args.experiment == 'al_aug':
+    config = configs.al_aug_config()
+    config.query_strategy = args.al_strategy
+    results = run_active_learning_experiment(
+      config, 
+      device=device,
+      strategy_type=Strategy[config.query_strategy], 
+      classes_to_track=[i for i in range(8)])
+
 
   # Supervised Learning in full data mode. 
   elif args.experiment == 'supervised':

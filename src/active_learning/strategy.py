@@ -1,9 +1,15 @@
 import torch
 import numpy as np
+import os
+import pandas as pd
+
+import sys
+sys.path.append( '.' )
+from data_processing.ev_parser import create_dataset
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, random_split, Subset
+from torch.utils.data import DataLoader, random_split, Subset, ConcatDataset
 from abc import abstractmethod
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import cdist
@@ -19,35 +25,52 @@ class Strategy(Enum):
 
 class QueryStrategy:
   """Base class for Active Learning query strategies."""
-  def __init__(self, dataset, sample_size, batch_size, seed):
-    self.sample_size = sample_size
+  def __init__(self, dataset, config, seed):
+    self.sample_size = config.sample_size
     self.dataset = dataset
     self.generator = torch.Generator().manual_seed(seed)
     self.seed = seed
-    self.batch_size = batch_size
+    self.batch_size = config.batch_size
     self.unlabeled_indexes = np.arange(start=0, stop=len(dataset))
     self.labeled_indexes = []
+    self.use_aug_data = config.use_aug_data
+    if self.use_aug_data:
+      aug_data_path = os.path.join(config.data_dir, 'augmented_final.csv')
+      self.df_aug = pd.read_csv(aug_data_path)
+      train_data_path = os.path.join(config.data_dir, 'train_final.csv')
+      self.df_train = pd.read_csv(train_data_path)
 
   @abstractmethod
   def choose_samples_to_label(self, learner, train_loader=None):
     pass
 
+  def get_trainset_with_aug(self, indexes):
+    augmented_sample = self.df_aug[np.isin(self.df_aug.id, indexes)]
+    selected_sample = self.df_train[np.isin(self.df_train.id, indexes)]
+    selected_sample = pd.concat([selected_sample, augmented_sample])
+    selected_sample.drop(columns=['id'], inplace=True)
+    selected_sample.reset_index(inplace=True)
+    return create_dataset(df=selected_sample)
+
 class RandomStrategy(QueryStrategy):
   """Chooses samples to label uniformly at random."""
-  def __init__(self, dataset, sample_size=48, batch_size=8, seed=42):
-    super().__init__(dataset, sample_size, batch_size, seed)
+  def __init__(self, dataset, config, seed=42):
+    super().__init__(dataset, config, seed)
 
   def choose_samples_to_label(self, learner, train_loader=None):
     unlabeled_indexes, to_label_indexes = train_test_split(
       self.unlabeled_indexes, test_size=self.sample_size, random_state=self.seed)
     self.unlabeled_indexes = unlabeled_indexes
     self.labeled_indexes.append(to_label_indexes)
-    return torch.utils.data.Subset(self.dataset, to_label_indexes)
+    if self.use_aug_data:
+      return self.get_trainset_with_aug(to_label_indexes)
+    
+    return Subset(self.dataset, to_label_indexes)
 
 class EntropyStrategy(QueryStrategy):
   """Chooses samples to label which have the maximum value of normalized entropy."""
-  def __init__(self, dataset, strategy, sample_size=48, batch_size=8, seed=42):
-    super().__init__(dataset, sample_size, batch_size, seed)
+  def __init__(self, dataset, strategy, config, seed=42):
+    super().__init__(dataset, config, seed)
     if strategy == Strategy.AVG_ENTROPY:
       self.compute_entropy = self.avg_entropy
     elif strategy == Strategy.MAX_ENTROPY:
@@ -70,6 +93,9 @@ class EntropyStrategy(QueryStrategy):
         self.unlabeled_indexes, test_size=self.sample_size, random_state=self.seed)
       self.unlabeled_indexes = unlabeled_indexes
       self.labeled_indexes.append(to_label_indexes)
+      if self.use_aug_data:
+        return self.get_trainset_with_aug(to_label_indexes)
+      
       return Subset(self.dataset, to_label_indexes)
 
     unlabeled_dataset = Subset(self.dataset, self.unlabeled_indexes)
@@ -94,13 +120,16 @@ class EntropyStrategy(QueryStrategy):
     to_label_indexes = self.unlabeled_indexes[new_indices_to_label]
     self.unlabeled_indexes = np.delete(self.unlabeled_indexes, new_indices_to_label)
     self.labeled_indexes.append(to_label_indexes)
-    return torch.utils.data.Subset(self.dataset, to_label_indexes)
+    if self.use_aug_data:
+      return self.get_trainset_with_aug(to_label_indexes)
+    
+    return Subset(self.dataset, to_label_indexes)
 
 
 class CALStrategy(QueryStrategy):
   """Chooses contranstive examples, see: https://arxiv.org/pdf/2109.03764.pdf."""
-  def __init__(self, dataset, sample_size=48, batch_size=8, seed=42):
-    super().__init__(dataset, sample_size, batch_size, seed)
+  def __init__(self, dataset, config, seed=42):
+    super().__init__(dataset, config, seed)
     self.num_neighbors = 10 # default value used in CAL repo
     self.use_true_labels = False # True for ablation experiment.
 
@@ -129,6 +158,9 @@ class CALStrategy(QueryStrategy):
         self.unlabeled_indexes, test_size=self.sample_size, random_state=self.seed)
       self.unlabeled_indexes = unlabeled_indexes
       self.labeled_indexes.append(to_label_indexes)
+      if self.use_aug_data:
+        return self.get_trainset_with_aug(to_label_indexes)
+      
       return Subset(self.dataset, to_label_indexes)
     
     train_embeddings, train_logits, train_labels = self.process_labeled_data(learner, train_loader)
@@ -176,4 +208,7 @@ class CALStrategy(QueryStrategy):
     to_label_indexes = self.unlabeled_indexes[new_indices_to_label]
     self.unlabeled_indexes = np.delete(self.unlabeled_indexes, new_indices_to_label)
     self.labeled_indexes.append(to_label_indexes)
-    return torch.utils.data.Subset(self.dataset, to_label_indexes)
+    if self.use_aug_data:
+      return self.get_trainset_with_aug(to_label_indexes)
+    
+    return Subset(self.dataset, to_label_indexes)

@@ -39,6 +39,15 @@ def active_learning_config():
   config.query_strategy = 'random'
   return config
 
+def al_aug_config():
+  config = active_learning_config()
+  config.data_dir = os.path.join('..', 'data')
+  config.results_dir = os.path.join('..', 'results', 'al_aug')
+  config.sample_size = 48
+  config.num_al_iters = 17
+  config.query_strategy = 'CAL'
+  config.use_aug_data = True
+  return config
 
 def zero_shot_config():
   config = multilabel_base()
@@ -60,7 +69,7 @@ def augmentation_config():
   config.seeds = [2, 42, 52, 62, 72]
   return config
 
-def augmentation_al_config():
+def augmentation_al_data_config():
   config = augmentation_config()
   config.sample_size = 48
   config.num_al_iters = 17
