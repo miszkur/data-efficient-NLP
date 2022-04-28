@@ -8,6 +8,21 @@ import os
 sns.set_style('darkgrid')
 FIGURES_DIR = 'figures'
 
+def get_x_axis(config):
+  x = [
+    (i+1)*config.sample_size 
+      for _ in range(5)
+    for i in range(config.num_al_iters)
+  ]
+  # We do not sample during the last AL iteration - x needs to be shorter.
+  x_sampling_stats = [
+    (i+1)*config.sample_size 
+      for _ in range(5)
+    for i in range(config.num_al_iters-1)
+  ]
+  return x, x_sampling_stats
+  
+
 def plot_al_results(strategies, config: ml_collections.ConfigDict, metrics):
   """Plot accuracy and F1 score of AL experiment
 
@@ -16,6 +31,8 @@ def plot_al_results(strategies, config: ml_collections.ConfigDict, metrics):
       It should contain path to experiment results and query strategy used in AL.
   """
   results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
+
+  x, x_sampling_stats = get_x_axis(config)
   with open(results_path, 'rb') as f:
     results_supervised = pickle.load(f)
 
@@ -28,7 +45,10 @@ def plot_al_results(strategies, config: ml_collections.ConfigDict, metrics):
           results = pickle.load(f)
           y = results[metric]
           # Plot accuracy.
-          sns.lineplot(x=results["split"][-len(y):], y=y, label=strategy)
+          if 'sampling' in metric:
+            sns.lineplot(x=x_sampling_stats, y=y, label=strategy)
+          else:
+            sns.lineplot(x=x, y=y, label=strategy)
           
           plt.xlabel('Labeled data size')
           plt.ylabel(metric)
@@ -79,6 +99,7 @@ def cold_vs_warm_start(strategy: str, config):
 def plot_metrics_for_classes(
   config, metrics, classes, strategies, class_names, 
   savedir='class_results', supervised_baseline=True):
+  x, x_sampling_stats = get_x_axis(config)
   results_path = os.path.join(config.results_dir, f'SUPERVISED.pkl')
   with open(results_path, 'rb') as f:
     results_supervised = pickle.load(f)
@@ -91,7 +112,7 @@ def plot_metrics_for_classes(
           with open(results_path, 'rb') as f:
             results = pickle.load(f)
             
-            sns.lineplot(x=results['split'], y=results[class_index][metric], label=strategy)
+            sns.lineplot(x=x, y=results[class_index][metric], label=strategy)
             plt.xlabel('Labeled data size')
             plt.ylabel(metric)
             plt.title(f'{metric} for different data sizes for {class_names[class_index]} class')
