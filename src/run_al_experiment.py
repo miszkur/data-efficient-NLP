@@ -86,6 +86,7 @@ def run_active_learning_experiment(
   assert os.path.isdir(config.results_dir), 'Invalid path to save experiment results!'
 
   valid_loader, test_loader = create_dataloader(config, 'valid')
+  test_loader = create_dataloader(config, 'test')
   train_dataset = create_dataset()
   num_al_iters = config.num_al_iters
   results = initialize_results_dict(classes_to_track)
