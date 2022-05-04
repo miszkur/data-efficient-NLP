@@ -161,6 +161,8 @@ def run_supervised_experiment(
   classes_to_track=[0,1]):
 
   valid_loader, test_loader = create_dataloader(config, 'valid')
+  test_loader = create_dataloader(config, 'test')
+
   results = initialize_results_dict(classes_to_track)
   del results['split']
   del results['sampling_emissions']

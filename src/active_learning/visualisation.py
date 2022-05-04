@@ -51,8 +51,15 @@ def plot_al_results(strategies, config: ml_collections.ConfigDict, metrics):
             sns.lineplot(x=x, y=y, label=strategy)
           
           plt.xlabel('Labeled data size')
-          plt.ylabel(metric)
-          plt.title(f'{metric} for different data sizes')
+          metric_name = metric.replace('_', ' ')
+          if 'time' in metric_name:
+            plt.ylabel(f'{metric_name} [s]')
+          elif 'f1' in metric_name:
+            metric_name = 'F1-score'
+            plt.ylabel(f'{metric_name}')
+          else:
+            plt.ylabel(f'{metric_name}')
+          plt.title(f'{metric_name} for different data sizes')
 
       
       if metric in results_supervised:

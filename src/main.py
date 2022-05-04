@@ -84,7 +84,8 @@ def main():
         config, 
         device=device,
         strategy_type=Strategy[args.al_strategy], 
-        first_sample_stratified=args.al_stratified)
+        first_sample_stratified=args.al_stratified,
+        classes_to_track=[i for i in range(8)])
 
   # Data Augmentation Experiment.
   elif args.experiment == 'augmentation':
