@@ -63,7 +63,7 @@ def main():
     config = configs.active_learning_config()
 
     if args.visualise:
-      strategies = ['CAL_true_labels', 'CAL']
+      strategies = ['CAL_aug_test', 'RANDOM_test']
       plot_al_results(
         strategies=strategies, 
         config=config, 

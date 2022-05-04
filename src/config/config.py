@@ -28,6 +28,7 @@ def multilabel_base():
   config.max_grad_norm = 1.0
   config.bert = bert_config()
   config.results_dir = os.path.join('..', 'results')
+  config.use_aug_data = False
   return config
 
 def active_learning_config():
