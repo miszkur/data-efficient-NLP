@@ -95,6 +95,7 @@ def run_active_learning_experiment(
   for al_i, seed in enumerate(config.seeds):
     print(f'=== Active Learning experiment for seed {al_i+1}/{len(config.seeds)} ===')
     strategy = initialize_strategy(strategy_type, train_dataset, config, seed)
+    torch.manual_seed(seed)
 
     if first_sample_stratified:
       labeled_data = get_stratified_sample(train_dataset, config, strategy)
