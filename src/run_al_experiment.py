@@ -93,6 +93,7 @@ def run_active_learning_experiment(
   for al_i, seed in enumerate(config.seeds):
     print(f'=== Active Learning experiment for seed {al_i+1}/{len(config.seeds)} ===')
     strategy = initialize_strategy(strategy_type, train_dataset, config, seed)
+    torch.manual_seed(seed)
 
     if first_sample_stratified:
       labeled_data = get_stratified_sample(train_dataset, config, strategy)
@@ -159,6 +160,8 @@ def run_supervised_experiment(
   classes_to_track=[0,1]):
 
   valid_loader, test_loader = create_dataloader(config, 'valid')
+  test_loader = create_dataloader(config, 'test')
+
   results = initialize_results_dict(classes_to_track)
   del results['split']
   del results['sampling_emissions']
