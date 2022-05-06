@@ -1,7 +1,11 @@
 import os 
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn import metrics
 
+FIGURES_DIR = 'figures'
 CLASS_NAMES = ['functionality','range_anxiety','availability','cost','ui','location','service_time','dealership']
 class_metrics = ['accuracy', 'f1_score', 'incorrect_predictions']
 class_metrics = ['precision', 'recall']
@@ -91,3 +95,30 @@ def visualise_augmentation_results(config, aug_mode='small', data_size=300):
       results_no_aug = pickle.load(f2)
       print_latex_summary(results, results_no_aug)
   
+
+def plot_train_time(config, aug_mode='small', data_sizes=[96, 192, 384, 816]):
+  x = [ds for ds in data_sizes for i in range(5)]
+  metric = 'train_time'
+  metric = 'training_emissions'
+
+  y_aug = []
+  y_no_aug = []
+  for data_size in data_sizes:
+    filename = f'SUPERVISED_{data_size}'
+    no_aug_results_path = os.path.join(config.results_dir, aug_mode, f'{filename}_aug_False.pkl')
+    results_path = os.path.join(config.results_dir, aug_mode, f'{filename}_aug_True.pkl')
+    with open(results_path, 'rb') as f:
+      results = pickle.load(f)
+      y_aug += results[metric]
+    with open(no_aug_results_path, 'rb') as f2:
+      results_no_aug = pickle.load(f2)
+      y_no_aug += results_no_aug[metric]
+  
+  sns.lineplot(x=x, y=y_aug, label='With augmentations')
+  sns.lineplot(x=x, y=y_no_aug, label='Without augmentations')
+  plt.xlabel('Labeled data size')
+  plt.ylabel(f'{metric} [s]')
+  plt.title(f'{metric} for different data sizes')
+  plt.savefig(os.path.join(config.results_dir, FIGURES_DIR, f'{metric}.png'))
+
+
