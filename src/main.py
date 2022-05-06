@@ -1,12 +1,12 @@
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 import argparse
 import config.config as configs
 import torch
 import os
 import pickle
-import active_learning.visualisation as al_vis
+import visualisation.active_learning as al_vis
 import visualisation.zero_shot as zs_vis
 import visualisation.augmentation as aug_vis
 import run_al_experiment as al_experiment
@@ -14,7 +14,7 @@ import run_data_aug_experiment as aug_experiment
 
 from run_al_experiment import run_active_learning_experiment, Strategy
 from run_zero_shot_experiment import run_zero_shot_experiment, run_zero_shot_for_semantic_neighbors
-from active_learning.visualisation import plot_al_results
+from visualisation.active_learning import plot_al_results
 
 
 def main():
@@ -93,7 +93,8 @@ def main():
     assert args.aug_mode in ['full', 'small', 'al_small']
 
     if args.visualise:
-      aug_vis.visualise_augmentation_results(config, args.aug_mode, data_size=args.data_size)
+      # aug_vis.visualise_augmentation_results(config, args.aug_mode, data_size=args.data_size)
+      aug_vis.plot_train_time(config, args.aug_mode)
       return
 
     config.results_dir = os.path.join(config.results_dir, args.aug_mode)

@@ -12,13 +12,11 @@ from typing import Dict, List
 from tqdm import tqdm
 
 from data_processing.ev_parser import create_dataset, create_dataloader
-from config.config import multilabel_base
 from models.bert import BertClassifier
 from learner import Learner
 
 from active_learning.strategy import Strategy
 import active_learning.strategy as al
-from active_learning.visualisation import plot_al_results
 
 
 def initialize_strategy(strategy: Strategy, train_dataset, config, seed):
