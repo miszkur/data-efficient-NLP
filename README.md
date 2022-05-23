@@ -1,24 +1,81 @@
-# Data Science Project Repository Template
+# Methods for data and user efficient annotation for multi-label topic classification 
 
-This project was originally made by @tobiasnorlund and slightly modified by me (Filip Cornell).
+This repo contains code for my Master's Thesis which explored the  following methods:
 
-This repo constitutes a skeleton for a typical ML/DS project. Docker is a first class citizen and can be customized by editing the provided `Dockerfile`.
+- Active Learning
+  - Contrastive Active Learning
+  - Max Entropy
 
-When starting a new project, please do the following:
+- Data Augmentation
+  - Backtranslation 
 
-1. On GitHub, create your own repository from this template by clicking the "Use this template" button
-2. Update `DOCKER_IMAGE_NAME` in `scripts/start.sh`
-3. Build and start a docker container:
+- Zero-Shot Learning 
+  - Textual Entailment Task
+
+## Enviornment Setup
+
+This project runs in a docker container. To start the containter
+with a GPU access, run:
 ```bash
-./scripts/start.sh [--gpu] [--notebook] [--tensorboard] [-v|--mount /host/path:/container/path] [--detach]
+./scripts/start.sh --gpu [--detach]
 ```
-5. Start a development container in VS Code:
-   There are two ways this can be done.
-   - Attach to the already running container (preferred when container is running on remote host)
-      - In VS Code, install the `Remote-Containers` extention
-      - Run `Remote-Containers: Attach to Running Container...` (F1). Select the newly created container
-      - In the Explorer pane, click `Open Folder` and type the workspace directory (by default mounted to `/workspace`)
-   - Let VS Code manage the container (preferred for local development)
-      - In VS Code, install the `Remote-Containers` extention
-      - Update `name` in `.devcontainer/devcontainer.json` to the value of `DOCKER_IMAGE_NAME`
-      - Run `Remote-Containers: Reopen in container` (F1). Select the newly created container
+
+If the container is built for the first time, you need to install pytorch from source:
+ 
+```bash
+pip3 install torch==1.10.2+cu113 torchvision==0.11.3+cu113 torchaudio==0.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+```
+
+## Project structure
+
+The directory structure of the whole project is as follows:
+
+```
+.
+├── data
+├── notebooks
+├── results
+├── scripts
+└── src
+    ├── active_learning
+    ├── config
+    ├── data_augmentation
+    ├── data_processing
+    ├── few_shot
+    ├── models
+    └── visualisation
+```
+- `data` contains EV charging station reviews dataset with the original split to the train, test and validation. Data was collected in [[1]](#1) and made available [here](https://zenodo.org/record/4276350#.Yjh8mprMI-Q).
+
+-  `notebooks` contains a jupyter notebook with data analysis 
+- `results` contains pickle files and figures with experiments' results
+- `scripts` contains code for setting up the enviornment
+- `src` contains methods implementation. There is a separate folder for each method, additionally:
+- `config` contains parameter settigns for all experiments
+- `models` contains BART and BERT models used in different experiments
+- `visualisation` contains plotting utilities for all experiments
+
+## Running Experiments
+
+To run any expoeriment, use the following command:
+
+```bash
+ python main.py --experiment EXPERIMENT_NAME (EXPERIMENT_ARGS)
+```
+
+Where `EXPERIMENT_NAME` is one of: 
+- `zero-shot` (Zero-Shot Learning) 
+- `al` (Active Learning) 
+- `augmentation` (Training with augmented data)
+- `al_aug` (Using augmented data in an Active Learning loop) 
+
+
+## References
+
+<a id="1">[1]</a> 
+S. Ha, D. J. Marchetto, S. Dharur, and O. I. Asensio, “Topic classifi-
+cation of electric vehicle consumer experiences with transformer-based
+deep learning,” en, Patterns, vol. 2, no. 2, p. 100 195, Feb. 2021, ISSN:
+2666-3899. 
+
+
