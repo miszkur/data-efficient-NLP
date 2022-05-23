@@ -16,6 +16,7 @@ from run_al_experiment import run_active_learning_experiment, Strategy
 from run_zero_shot_experiment import run_zero_shot_experiment, run_zero_shot_for_semantic_neighbors
 from visualisation.active_learning import plot_al_results
 
+EXPERIMENTS = ['zero-shot', 'al', 'al_aug', 'augmentation']
 
 def main():
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -39,6 +40,8 @@ def main():
                       Size of the training set.')
 
   args = parser.parse_args()
+  
+  assert args.experiment in EXPERIMENTS
 
   # Zero-Shot Experiments.
   if args.experiment == 'zero-shot':
