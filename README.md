@@ -86,10 +86,35 @@ python main.py --experiment al --al_strategy STRATEGY [--al_stratified] [--visua
 ```
 
 where:
-- `STRATEGY` is one of: CAL, MAX_ENTROPY, RANDOM
+- `STRATEGY` is one of:
+  - `CAL` - Contrastive Active Learning [[2]](#2) 
+  - `MAX_ENTROPY` [[3]](#3)
+  - `RANDOM` - a baseline in which the next sample for labeling is chosen uniformly at random 
 - `--al_stratified` results in the first sample for labeling being stratified 
 
 ### ***Data Augmentation***
+
+#### ***Backtranslation [[4]](#4) ***
+
+To augment the dataset using backtranslation, from the `data_augmentation` directory, run:
+```bash
+python backtranslation.py --run
+```
+To see the quality of augmented data such as redundant translations, NaN and Data Quality for Text Classification metric [[5]](#5) run:
+
+```bash
+python backtranslation.py --visualise
+```
+
+To convert augmented dataset into the training set, run:
+
+```bash
+python backtranslation.py --convert
+```
+
+#### ***Training***
+
+To train with augmented data, run:
 
 ```bash
 python main.py --experiment augmentation --aug_mode MODE [--visualise]
@@ -113,7 +138,7 @@ python main.py --experiment al_aug
 
 Each AL selected sample is complemented with a corresponding augmented sample. 
 
-### ***Zero-Shot via Textual Entailment***
+### ***Zero-Shot via Textual Entailment [[6]](#6) ***
 
 ```bash
 python main.py --experiment zero-shot [--zs_var] [--visualise]
@@ -128,4 +153,29 @@ S. Ha, D. J. Marchetto, S. Dharur, and O. I. Asensio, “Topic classification of
 deep learning,” en, Patterns, vol. 2, no. 2, p. 100 195, Feb. 2021, ISSN:
 2666-3899. 
 
+<a id="2">[2]</a> 
+K. Margatina, G. Vernikos, L. Barrault, and N. Aletras, “Active
+Learning by Acquiring Contrastive Examples,” arXiv:2109.03764 [cs],
+Sep. 2021, arXiv: 2109.03764. [Online]. Available: http://arxiv.org/abs/2109.03764 (visited on 02/08/2022).
 
+<a id="3">[3]</a> 
+D. J. C. MacKay, “The Evidence Framework Applied to Classification
+Networks,” en, Neural Computation, vol. 4, no. 5, pp. 720–736, Sep.
+1992, ISSN: 0899-7667, 1530-888X. DOI: 10.1162/neco.1992.4
+.5.720. [Online]. Available: https://direct.mit.edu/neco/article/4/5/720-736/5662 (visited on 03/10/2022).
+
+<a id="4">[4]</a> 
+R. Sennrich, B. Haddow, and A. Birch, “Improving Neural Machine
+Translation Models with Monolingual Data,” in Proceedings of
+the 54th Annual Meeting of the Association for Computational
+Linguistics (Volume 1: Long Papers), Berlin, Germany: Association for
+Computational Linguistics, Aug. 2016, pp. 86–96. DOI: 10.18653/v
+1/P16-1009. [Online]. Available: https://aclanthology.org/P16-1009 (visited on 03/18/2022).
+
+<a id="5">[5]</a> 
+J. Li, “Automatic data quality evaluation for text classification,”
+[Online]. Available: https://datacentricai.org/neurips21/papers/72_CameraReady_li_jiazheng_data_centric_ai_workshop.pdf (visited on 05/24/2022).
+
+<a id="6">[6]</a> 
+W. Yin, J. Hay, and D. Roth, “Benchmarking Zero-shot Text Classification: Datasets, Evaluation and Entailment Approach,” arXiv:1909.00161
+[cs], Aug. 2019, arXiv: 1909.00161. [Online]. Available: http://arxiv.org/abs/1909.00161 (visited on 03/16/2022).
