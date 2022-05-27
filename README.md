@@ -12,6 +12,8 @@ This repo contains code for my Master's Thesis which explored the  following met
 - Zero-Shot Learning 
   - Textual Entailment Task
 
+For multi-label topic classification of Electric Vehicle Charging Stations Reviews using transformer-based models.
+
 ## Enviornment Setup
 
 This project runs in a docker container. To start the containter
@@ -94,7 +96,7 @@ where:
 
 ### ***Data Augmentation***
 
-#### ***Backtranslation [[4]](#4) ***
+#### ***Backtranslation [[4]](#4)***
 
 To augment the dataset using backtranslation, from the `data_augmentation` directory, run:
 ```bash
@@ -138,7 +140,7 @@ python main.py --experiment al_aug
 
 Each AL selected sample is complemented with a corresponding augmented sample. 
 
-### ***Zero-Shot via Textual Entailment [[6]](#6) ***
+### ***Zero-Shot via Textual Entailment [[6]](#6)***
 
 ```bash
 python main.py --experiment zero-shot [--zs_var] [--visualise]
