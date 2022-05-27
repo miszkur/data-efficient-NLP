@@ -12,7 +12,7 @@ This repo contains code for my Master's Thesis which explored the  following met
 - Zero-Shot Learning 
   - Textual Entailment Task
 
-For multi-label topic classification of Electric Vehicle Charging Stations Reviews using transformer-based models.
+For multi-label topic classification using transformer-based models (BART for Zero-Shot Learning and BERT for the rest of the tasks).
 
 ## Enviornment Setup
 
